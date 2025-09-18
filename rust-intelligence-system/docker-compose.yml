@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Main Intelligence API
   intelligence-api:
     build:
       context: .
@@ -34,7 +33,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     environment:
@@ -55,7 +53,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     ports:
@@ -71,7 +68,6 @@ services:
       timeout: 3s
       retries: 5
 
-  # Apache Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     environment:
@@ -110,7 +106,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Prometheus Monitoring
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -129,7 +124,6 @@ services:
       - intelligence-network
     restart: unless-stopped
 
-  # Grafana Dashboard
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -146,7 +140,6 @@ services:
     depends_on:
       - prometheus
 
-  # Jaeger Tracing
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
@@ -160,7 +153,6 @@ services:
       - intelligence-network
     restart: unless-stopped
 
-  # Elasticsearch for data storage
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     environment:
@@ -180,7 +172,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Kibana for data visualization
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
     ports:

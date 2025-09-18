@@ -2,12 +2,8 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-
 use intelligence_core::{IntelligenceError, Result as IntelligenceResult};
 use crate::authentication::{Role, Permission, User};
-
-/// Role-Based Access Control (RBAC) system
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Resource {
     pub id: Uuid,
@@ -17,7 +13,6 @@ pub struct Resource {
     pub classification: DataClassification,
     pub metadata: HashMap<String, serde_json::Value>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ResourceType {
     IntelligenceData,
@@ -29,7 +24,6 @@ pub enum ResourceType {
     Report,
     Dashboard,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DataClassification {
     Public,
@@ -38,7 +32,6 @@ pub enum DataClassification {
     Secret,
     TopSecret,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccessPolicy {
     pub id: Uuid,
@@ -49,7 +42,6 @@ pub struct AccessPolicy {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccessRule {
     pub id: Uuid,
@@ -59,7 +51,6 @@ pub struct AccessRule {
     pub conditions: Vec<AccessCondition>,
     pub effect: AccessEffect,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AccessSubject {
     User(Uuid),
@@ -67,7 +58,6 @@ pub enum AccessSubject {
     Group(String),
     All,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AccessResource {
     ResourceType(ResourceType),
@@ -75,7 +65,6 @@ pub enum AccessResource {
     ResourcePattern(String),
     All,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
     Read,
@@ -84,7 +73,6 @@ pub enum Action {
     Execute,
     Admin,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AccessCondition {
     TimeRange {
@@ -102,13 +90,11 @@ pub enum AccessCondition {
         value: serde_json::Value,
     },
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AccessEffect {
     Allow,
     Deny,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccessDecision {
     pub decision: AccessEffect,
@@ -116,14 +102,11 @@ pub struct AccessDecision {
     pub matched_rules: Vec<Uuid>,
     pub timestamp: chrono::DateTime<chrono::Utc>,
 }
-
-/// Authorization service
 pub struct AuthorizationService {
     policies: HashMap<Uuid, AccessPolicy>,
     role_permissions: HashMap<Role, Vec<Permission>>,
     default_policies: Vec<AccessPolicy>,
 }
-
 impl AuthorizationService {
     pub fn new() -> Self {
         let mut service = Self {
@@ -131,13 +114,10 @@ impl AuthorizationService {
             role_permissions: HashMap::new(),
             default_policies: Vec::new(),
         };
-        
         service.initialize_default_permissions();
         service.initialize_default_policies();
         service
     }
-    
-    /// Check if user has permission to perform action on resource
     pub async fn check_permission(
         &self,
         user: &User,
@@ -148,23 +128,17 @@ impl AuthorizationService {
         let mut matched_rules = Vec::new();
         let mut decision = AccessEffect::Deny;
         let mut reason = "No matching policy found".to_string();
-        
-        // Check role-based permissions first
         if self.has_role_permission(user, action, resource) {
             decision = AccessEffect::Allow;
             reason = "Role-based permission granted".to_string();
         }
-        
-        // Check explicit policies
         for policy in self.policies.values() {
             if !policy.is_active {
                 continue;
             }
-            
             for rule in &policy.rules {
                 if self.rule_matches(rule, user, action, resource, context) {
                     matched_rules.push(rule.id);
-                    
                     match rule.effect {
                         AccessEffect::Allow => {
                             decision = AccessEffect::Allow;
@@ -173,23 +147,19 @@ impl AuthorizationService {
                         AccessEffect::Deny => {
                             decision = AccessEffect::Deny;
                             reason = format!("Policy '{}' denies access", policy.name);
-                            break; // Deny takes precedence
+                            break;
                         }
                     }
                 }
             }
         }
-        
-        // Check default policies
         for policy in &self.default_policies {
             if !policy.is_active {
                 continue;
             }
-            
             for rule in &policy.rules {
                 if self.rule_matches(rule, user, action, resource, context) {
                     matched_rules.push(rule.id);
-                    
                     match rule.effect {
                         AccessEffect::Allow => {
                             if decision == AccessEffect::Deny {
@@ -206,7 +176,6 @@ impl AuthorizationService {
                 }
             }
         }
-        
         Ok(AccessDecision {
             decision,
             reason,
@@ -214,47 +183,32 @@ impl AuthorizationService {
             timestamp: chrono::Utc::now(),
         })
     }
-    
-    /// Create a new access policy
     pub async fn create_policy(&mut self, policy: AccessPolicy) -> IntelligenceResult<Uuid> {
         let policy_id = policy.id;
         self.policies.insert(policy_id, policy);
         Ok(policy_id)
     }
-    
-    /// Update an existing access policy
     pub async fn update_policy(&mut self, policy_id: Uuid, policy: AccessPolicy) -> IntelligenceResult<()> {
         if !self.policies.contains_key(&policy_id) {
             return Err(IntelligenceError::NotFound { resource: "Access policy".to_string() });
         }
-        
         self.policies.insert(policy_id, policy);
         Ok(())
     }
-    
-    /// Delete an access policy
     pub async fn delete_policy(&mut self, policy_id: Uuid) -> IntelligenceResult<()> {
         if !self.policies.contains_key(&policy_id) {
             return Err(IntelligenceError::NotFound { resource: "Access policy".to_string() });
         }
-        
         self.policies.remove(&policy_id);
         Ok(())
     }
-    
-    /// Get all policies
     pub async fn get_policies(&self) -> Vec<&AccessPolicy> {
         self.policies.values().collect()
     }
-    
-    /// Get policy by ID
     pub async fn get_policy(&self, policy_id: Uuid) -> IntelligenceResult<&AccessPolicy> {
         self.policies.get(&policy_id)
             .ok_or_else(|| IntelligenceError::NotFound { resource: "Access policy".to_string() })
     }
-    
-    // Private helper methods
-    
     fn has_role_permission(&self, user: &User, action: &Action, resource: &Resource) -> bool {
         for role in &user.roles {
             if let Some(permissions) = self.role_permissions.get(role) {
@@ -265,7 +219,6 @@ impl AuthorizationService {
         }
         false
     }
-    
     fn permission_allows_action(&self, permissions: &[Permission], action: &Action, resource: &Resource) -> bool {
         match action {
             Action::Read => permissions.contains(&Permission::ReadData),
@@ -275,7 +228,6 @@ impl AuthorizationService {
             Action::Admin => permissions.contains(&Permission::ManageSystem),
         }
     }
-    
     fn rule_matches(
         &self,
         rule: &AccessRule,
@@ -284,49 +236,38 @@ impl AuthorizationService {
         resource: &Resource,
         context: &AccessContext,
     ) -> bool {
-        // Check subject
         if !self.subject_matches(&rule.subject, user) {
             return false;
         }
-        
-        // Check resource
         if !self.resource_matches(&rule.resource, resource) {
             return false;
         }
-        
-        // Check actions
         if !rule.actions.contains(action) {
             return false;
         }
-        
-        // Check conditions
         for condition in &rule.conditions {
             if !self.condition_matches(condition, user, resource, context) {
                 return false;
             }
         }
-        
         true
     }
-    
     fn subject_matches(&self, subject: &AccessSubject, user: &User) -> bool {
         match subject {
             AccessSubject::User(user_id) => user.id == *user_id,
             AccessSubject::Role(role) => user.roles.contains(role),
-            AccessSubject::Group(_) => false, // Group support would be implemented here
+            AccessSubject::Group(_) => false,
             AccessSubject::All => true,
         }
     }
-    
     fn resource_matches(&self, resource_pattern: &AccessResource, resource: &Resource) -> bool {
         match resource_pattern {
             AccessResource::ResourceType(resource_type) => resource.resource_type == *resource_type,
             AccessResource::SpecificResource(resource_id) => resource.id == *resource_id,
-            AccessResource::ResourcePattern(_) => false, // Pattern matching would be implemented here
+            AccessResource::ResourcePattern(_) => false,
             AccessResource::All => true,
         }
     }
-    
     fn condition_matches(
         &self,
         condition: &AccessCondition,
@@ -350,12 +291,10 @@ impl AuthorizationService {
                 self.classification_allowed(&resource.classification, max_classification)
             }
             AccessCondition::Custom { name, value } => {
-                // Custom condition logic would be implemented here
                 false
             }
         }
     }
-    
     fn classification_allowed(&self, resource_classification: &DataClassification, max_classification: &DataClassification) -> bool {
         let classification_levels = [
             DataClassification::Public,
@@ -364,13 +303,10 @@ impl AuthorizationService {
             DataClassification::Secret,
             DataClassification::TopSecret,
         ];
-        
         let resource_level = classification_levels.iter().position(|c| c == resource_classification).unwrap_or(0);
         let max_level = classification_levels.iter().position(|c| c == max_classification).unwrap_or(0);
-        
         resource_level <= max_level
     }
-    
     fn initialize_default_permissions(&mut self) {
         self.role_permissions.insert(Role::Admin, vec![
             Permission::ReadData,
@@ -384,7 +320,6 @@ impl AuthorizationService {
             Permission::ExportData,
             Permission::ImportData,
         ]);
-        
         self.role_permissions.insert(Role::Analyst, vec![
             Permission::ReadData,
             Permission::WriteData,
@@ -392,25 +327,20 @@ impl AuthorizationService {
             Permission::AccessSensitiveData,
             Permission::ExportData,
         ]);
-        
         self.role_permissions.insert(Role::Operator, vec![
             Permission::ReadData,
             Permission::ManageAgents,
             Permission::ViewAnalytics,
         ]);
-        
         self.role_permissions.insert(Role::Viewer, vec![
             Permission::ReadData,
             Permission::ViewAnalytics,
         ]);
-        
         self.role_permissions.insert(Role::Guest, vec![
             Permission::ReadData,
         ]);
     }
-    
     fn initialize_default_policies(&mut self) {
-        // Default policy: Deny all access to top secret data except for admins
         let deny_top_secret_policy = AccessPolicy {
             id: Uuid::new_v4(),
             name: "Deny Top Secret Access".to_string(),
@@ -429,11 +359,9 @@ impl AuthorizationService {
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
         };
-        
         self.default_policies.push(deny_top_secret_policy);
     }
 }
-
 #[derive(Debug, Clone)]
 pub struct AccessContext {
     pub ip_address: Option<String>,
@@ -441,7 +369,6 @@ pub struct AccessContext {
     pub timestamp: chrono::DateTime<chrono::Utc>,
     pub additional_data: HashMap<String, serde_json::Value>,
 }
-
 impl AccessContext {
     pub fn new() -> Self {
         Self {
@@ -451,12 +378,10 @@ impl AccessContext {
             additional_data: HashMap::new(),
         }
     }
-    
     pub fn with_ip_address(mut self, ip_address: String) -> Self {
         self.ip_address = Some(ip_address);
         self
     }
-    
     pub fn with_user_agent(mut self, user_agent: String) -> Self {
         self.user_agent = Some(user_agent);
         self

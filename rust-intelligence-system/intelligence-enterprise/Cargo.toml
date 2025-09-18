@@ -1,0 +1,34 @@
+[package]
+name = "intelligence-enterprise"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+intelligence-core = { path = "../intelligence-core" }
+intelligence-analytics = { path = "../intelligence-analytics" }
+
+datafusion = "39.0"
+tikv = "0.1"
+tantivy = "0.22"
+dozer = "0.1"
+apache-avro = "0.14"
+parquet = "0.20"
+arrow = "50.0"
+polars = { workspace = true }
+sqlx = { workspace = true }
+redis = { workspace = true }
+kafka = "0.9"
+elasticsearch = "8.5"
+opentelemetry = "0.21"
+jaeger = "0.20"
+prometheus = "0.13"
+grafana = "0.1"

@@ -3,9 +3,6 @@ use std::collections::HashMap;
 use std::env;
 use config::{Config, ConfigError, Environment, File};
 use anyhow::Result;
-
-/// Configuration management for the intelligence system
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntelligenceConfig {
     pub server: ServerConfig,
@@ -18,7 +15,6 @@ pub struct IntelligenceConfig {
     pub agents: AgentsConfig,
     pub analytics: AnalyticsConfig,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
     pub host: String,
@@ -29,7 +25,6 @@ pub struct ServerConfig {
     pub enable_cors: bool,
     pub cors_origins: Vec<String>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatabaseConfig {
     pub postgres_url: String,
@@ -39,7 +34,6 @@ pub struct DatabaseConfig {
     pub idle_timeout_seconds: u64,
     pub max_lifetime_seconds: u64,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RedisConfig {
     pub url: String,
@@ -47,7 +41,6 @@ pub struct RedisConfig {
     pub connection_timeout_seconds: u64,
     pub command_timeout_seconds: u64,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaConfig {
     pub bootstrap_servers: Vec<String>,
@@ -58,7 +51,6 @@ pub struct KafkaConfig {
     pub heartbeat_interval_ms: u64,
     pub max_poll_interval_ms: u64,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityConfig {
     pub jwt_secret: String,
@@ -71,7 +63,6 @@ pub struct SecurityConfig {
     pub password_min_length: usize,
     pub password_require_special_chars: bool,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitoringConfig {
     pub prometheus_port: u16,
@@ -80,7 +71,6 @@ pub struct MonitoringConfig {
     pub enable_tracing: bool,
     pub metrics_retention_days: u32,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiProviderConfig {
     pub api_key: String,
@@ -90,7 +80,6 @@ pub struct AiProviderConfig {
     pub max_retries: u32,
     pub models: Vec<String>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentsConfig {
     pub max_concurrent_tasks: u32,
@@ -98,7 +87,6 @@ pub struct AgentsConfig {
     pub health_check_interval_seconds: u64,
     pub agent_types: HashMap<String, AgentTypeConfig>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentTypeConfig {
     pub enabled: bool,
@@ -106,14 +94,12 @@ pub struct AgentTypeConfig {
     pub resources: ResourceConfig,
     pub capabilities: Vec<String>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceConfig {
     pub cpu_limit: String,
     pub memory_limit: String,
     pub disk_limit: String,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalyticsConfig {
     pub batch_size: usize,
@@ -122,44 +108,35 @@ pub struct AnalyticsConfig {
     pub enable_real_time: bool,
     pub model_paths: HashMap<String, String>,
 }
-
 impl IntelligenceConfig {
     pub fn load() -> Result<Self> {
         let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "development".into());
-        
         let config = Config::builder()
             .add_source(File::with_name("config/default").required(false))
             .add_source(File::with_name(&format!("config/{}", run_mode)).required(false))
             .add_source(File::with_name("config/local").required(false))
             .add_source(Environment::with_prefix("INTELLIGENCE").separator("_"))
             .build()?;
-        
         let config: IntelligenceConfig = config.try_deserialize()?;
         config.validate()?;
         Ok(config)
     }
-    
     fn validate(&self) -> Result<()> {
         if self.server.port == 0 {
             return Err(anyhow::anyhow!("Server port cannot be 0"));
         }
-        
         if self.database.postgres_url.is_empty() {
             return Err(anyhow::anyhow!("Database URL cannot be empty"));
         }
-        
         if self.security.jwt_secret.len() < 32 {
             return Err(anyhow::anyhow!("JWT secret must be at least 32 characters"));
         }
-        
         if self.security.encryption_key.len() < 32 {
             return Err(anyhow::anyhow!("Encryption key must be at least 32 characters"));
         }
-        
         Ok(())
     }
 }
-
 impl Default for IntelligenceConfig {
     fn default() -> Self {
         Self {
@@ -173,7 +150,7 @@ impl Default for IntelligenceConfig {
                 cors_origins: vec!["*".to_string()],
             },
             database: DatabaseConfig {
-                postgres_url: "postgresql://localhost/intelligence".to_string(),
+                postgres_url: "postgresql:
                 max_connections: 20,
                 min_connections: 5,
                 connection_timeout_seconds: 30,
@@ -181,7 +158,7 @@ impl Default for IntelligenceConfig {
                 max_lifetime_seconds: 1800,
             },
             redis: RedisConfig {
-                url: "redis://localhost:6379".to_string(),
+                url: "redis:
                 max_connections: 10,
                 connection_timeout_seconds: 5,
                 command_timeout_seconds: 3,

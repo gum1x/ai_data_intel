@@ -1,12 +1,9 @@
-//! Intelligence Monitoring - Production monitoring and observability
-
 pub mod health_checks;
 pub mod metrics_collector;
 pub mod alerting;
 pub mod dashboards;
 pub mod tracing;
 pub mod logging;
-
 pub use health_checks::*;
 pub use metrics_collector::*;
 pub use alerting::*;

@@ -3,24 +3,18 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use validator::Validate;
-
-/// Core data types for the intelligence system
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IntelligenceId(pub Uuid);
-
 impl IntelligenceId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
 }
-
 impl Default for IntelligenceId {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct IntelligenceData {
     pub id: IntelligenceId,
@@ -34,7 +28,6 @@ pub struct IntelligenceData {
     #[validate(range(min = 0.0, max = 1.0))]
     pub quality_score: f64,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DataSource {
     Telegram,
@@ -45,7 +38,6 @@ pub enum DataSource {
     File,
     Database,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DataClassification {
     Public,
@@ -54,7 +46,6 @@ pub enum DataClassification {
     Secret,
     TopSecret,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct UserProfile {
     pub id: IntelligenceId,
@@ -66,7 +57,6 @@ pub struct UserProfile {
     pub last_seen: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Platform {
     Telegram,
@@ -75,7 +65,6 @@ pub enum Platform {
     Blockchain,
     Other(String),
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThreatAssessment {
     pub id: IntelligenceId,
@@ -86,7 +75,6 @@ pub struct ThreatAssessment {
     pub timestamp: DateTime<Utc>,
     pub analyst_id: Option<IntelligenceId>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ThreatLevel {
     Low,
@@ -94,7 +82,6 @@ pub enum ThreatLevel {
     High,
     Critical,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThreatIndicator {
     pub indicator_type: IndicatorType,
@@ -102,7 +89,6 @@ pub struct ThreatIndicator {
     pub confidence: f64,
     pub source: String,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IndicatorType {
     IpAddress,
@@ -114,7 +100,6 @@ pub enum IndicatorType {
     BehavioralPattern,
     NetworkConnection,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalysisResult {
     pub id: IntelligenceId,
@@ -125,7 +110,6 @@ pub struct AnalysisResult {
     pub timestamp: DateTime<Utc>,
     pub processing_time_ms: u64,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AnalysisType {
     BehaviorAnalysis,
@@ -137,7 +121,6 @@ pub enum AnalysisType {
     EntityExtraction,
     LinkAnalysis,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentTask {
     pub id: IntelligenceId,
@@ -150,7 +133,6 @@ pub struct AgentTask {
     pub created_at: DateTime<Utc>,
     pub deadline: Option<DateTime<Utc>>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TaskType {
     DataCollection,
@@ -160,7 +142,6 @@ pub enum TaskType {
     ProfileBuilding,
     ReportGeneration,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TaskPriority {
     Low,
@@ -168,7 +149,6 @@ pub enum TaskPriority {
     High,
     Critical,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TaskStatus {
     Pending,
@@ -177,7 +157,6 @@ pub enum TaskStatus {
     Failed,
     Cancelled,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemMetrics {
     pub timestamp: DateTime<Utc>,
@@ -189,7 +168,6 @@ pub struct SystemMetrics {
     pub threat_detections: u64,
     pub error_count: u64,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditLog {
     pub id: IntelligenceId,
