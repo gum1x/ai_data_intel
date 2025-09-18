@@ -1,0 +1,35 @@
+[package]
+name = "intelligence-collectors"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+reqwest = { version = "0.11", features = ["json", "stream"] }
+futures = "0.3"
+
+# Local dependencies
+intelligence-core = { path = "../intelligence-core" }
+intelligence-security = { path = "../intelligence-security" }
+
+# Additional dependencies
+scraper = "0.18"
+regex = "1.10"
+url = "2.4"
+select = "0.6"
+telegram-bot = "0.20"
+web3 = { workspace = true }
+ethers = { workspace = true }
+scraping = "0.1"
+headless_chrome = "0.3"
+playwright = "0.1"
+selenium = "0.1"
+rand = "0.8"

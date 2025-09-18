@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: intelligence-api-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: intelligence-api
+    app.kubernetes.io/component: api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: intelligence-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intelligence-agents-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: intelligence-agents
+    app.kubernetes.io/component: agents
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: intelligence-agents
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intelligence-analytics-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: intelligence-analytics
+    app.kubernetes.io/component: analytics
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: intelligence-analytics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app.kubernetes.io/name: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app.kubernetes.io/name: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9092
+    targetPort: 9092
+    protocol: TCP
+    name: kafka
+  selector:
+    app.kubernetes.io/name: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/component: monitoring
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: prometheus
+  selector:
+    app.kubernetes.io/name: prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: tracing
+spec:
+  type: ClusterIP
+  ports:
+  - port: 14268
+    targetPort: 14268
+    protocol: TCP
+    name: jaeger
+  - port: 16686
+    targetPort: 16686
+    protocol: TCP
+    name: jaeger-ui
+  selector:
+    app.kubernetes.io/name: jaeger
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: intelligence-system
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: monitoring
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: grafana
+  selector:
+    app.kubernetes.io/name: grafana

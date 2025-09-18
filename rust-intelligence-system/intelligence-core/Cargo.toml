@@ -1,0 +1,21 @@
+[package]
+name = "intelligence-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+dashmap = { workspace = true }
+arc-swap = { workspace = true }
+tracing = { workspace = true }
+
+# Additional dependencies
+validator = { version = "0.18", features = ["derive"] }
+bytes = "1.5"

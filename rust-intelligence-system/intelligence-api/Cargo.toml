@@ -1,0 +1,37 @@
+[package]
+name = "intelligence-api"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "intelligence-api"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Local dependencies
+intelligence-core = { path = "../intelligence-core" }
+intelligence-security = { path = "../intelligence-security" }
+intelligence-analytics = { path = "../intelligence-analytics" }
+intelligence-monitoring = { path = "../intelligence-monitoring" }
+intelligence-collectors = { path = "../intelligence-collectors" }
+
+# Additional dependencies
+clap = { workspace = true }
+config = { workspace = true }
+sqlx = { workspace = true }
+redis = { workspace = true }
+kafka = { workspace = true }

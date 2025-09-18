@@ -1,0 +1,25 @@
+[package]
+name = "intelligence-monitoring"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry-jaeger = { workspace = true }
+
+# Additional dependencies
+intelligence-core = { path = "../intelligence-core" }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
