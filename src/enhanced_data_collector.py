@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Enhanced Data Collector - Advanced information gathering capabilities
 """
@@ -18,7 +17,6 @@ import requests
 from urllib.parse import urlparse, parse_qs
 import networkx as nx
 
-# Telegram
 from telethon import TelegramClient
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.channels import GetFullChannelRequest
@@ -52,7 +50,6 @@ class EnhancedUserProfile:
     common_chats_count: int
     last_seen: str
     created_at: datetime
-    # Enhanced data
     groups: List[Dict[str, Any]]
     contacts: List[Dict[str, Any]]
     forwarded_messages: List[Dict[str, Any]]
@@ -116,8 +113,8 @@ class EnhancedDataCollector:
                 r'@[a-zA-Z0-9_]{5,32}'
             ],
             'hashtags': [
-                r'#[a-zA-Z0-9_]+',
-                r'#[a-zA-Z0-9_]{2,100}'
+                r'
+                r'
             ],
             'urls': [
                 r'https?://[^\s<>"{}|\\^`\[\]]+',
@@ -129,14 +126,11 @@ class EnhancedDataCollector:
                                             messages: List[Message]) -> EnhancedUserProfile:
         """Collect comprehensive user data with enhanced information gathering"""
         try:
-            # Basic user info
             user_id = str(user.id)
             username = getattr(user, 'username', '')
             
-            # Get full user information
             full_user = await client(GetFullUserRequest(user))
             
-            # Extract basic profile data
             profile_data = {
                 'user_id': user_id,
                 'username': username,
@@ -155,10 +149,8 @@ class EnhancedDataCollector:
                 'created_at': datetime.now()
             }
             
-            # Enhanced data collection
             enhanced_data = await self.collect_enhanced_data(client, user, messages)
             
-            # Combine all data
             profile_data.update(enhanced_data)
             
             return EnhancedUserProfile(**profile_data)
@@ -190,29 +182,21 @@ class EnhancedDataCollector:
         }
         
         try:
-            # Analyze messages for patterns
             message_analysis = await self.analyze_messages(messages)
             enhanced_data.update(message_analysis)
             
-            # Get user's groups
             enhanced_data['groups'] = await self.get_user_groups(client, user)
             
-            # Get user's contacts
             enhanced_data['contacts'] = await self.get_user_contacts(client, user)
             
-            # Analyze behavioral patterns
             enhanced_data['behavioral_patterns'] = await self.analyze_behavioral_patterns(messages)
             
-            # Analyze communication style
             enhanced_data['communication_style'] = await self.analyze_communication_style(messages)
             
-            # Create activity timeline
             enhanced_data['activity_timeline'] = await self.create_activity_timeline(messages)
             
-            # Analyze network connections
             enhanced_data['network_connections'] = await self.analyze_network_connections(client, user)
             
-            # Identify suspicious indicators
             enhanced_data['suspicious_indicators'] = await self.identify_suspicious_indicators(
                 enhanced_data, messages
             )
@@ -242,7 +226,6 @@ class EnhancedDataCollector:
             
             text = message.text
             
-            # Extract forwarded messages
             if message.fwd_from:
                 analysis['forwarded_messages'].append({
                     'original_sender': str(message.fwd_from.from_id),
@@ -251,7 +234,6 @@ class EnhancedDataCollector:
                     'message_id': message.id
                 })
             
-            # Extract media files
             if message.media:
                 analysis['media_files'].append({
                     'media_type': str(type(message.media).__name__),
@@ -260,7 +242,6 @@ class EnhancedDataCollector:
                     'message_id': message.id
                 })
             
-            # Extract crypto addresses
             for crypto_type, pattern in self.patterns['crypto_addresses'].items():
                 matches = re.findall(pattern, text)
                 for match in matches:
@@ -270,7 +251,6 @@ class EnhancedDataCollector:
                         'message_id': message.id
                     })
             
-            # Extract phone numbers
             for pattern in self.patterns['phone_numbers']:
                 matches = re.findall(pattern, text)
                 for match in matches:
@@ -279,7 +259,6 @@ class EnhancedDataCollector:
                         'message_id': message.id
                     })
             
-            # Extract emails
             for pattern in self.patterns['emails']:
                 matches = re.findall(pattern, text)
                 for match in matches:
@@ -288,7 +267,6 @@ class EnhancedDataCollector:
                         'message_id': message.id
                     })
             
-            # Extract social links
             for pattern in self.patterns['social_links']:
                 matches = re.findall(pattern, text)
                 for match in matches:
@@ -297,17 +275,14 @@ class EnhancedDataCollector:
                         'message_id': message.id
                     })
             
-            # Extract mentions
             for pattern in self.patterns['mentions']:
                 matches = re.findall(pattern, text)
                 analysis['mentions'].extend(matches)
             
-            # Extract hashtags
             for pattern in self.patterns['hashtags']:
                 matches = re.findall(pattern, text)
                 analysis['hashtags'].extend(matches)
             
-            # Extract all URLs
             for pattern in self.patterns['urls']:
                 matches = re.findall(pattern, text)
                 for match in matches:
@@ -316,7 +291,6 @@ class EnhancedDataCollector:
                         'message_id': message.id
                     })
         
-        # Remove duplicates
         analysis['mentions'] = list(set(analysis['mentions']))
         analysis['hashtags'] = list(set(analysis['hashtags']))
         
@@ -327,14 +301,11 @@ class EnhancedDataCollector:
         groups = []
         
         try:
-            # Get user's dialogs
             dialogs = await client.get_dialogs()
             
             for dialog in dialogs:
                 if hasattr(dialog.entity, 'participants_count'):
-                    # This is a group/channel
                     try:
-                        # Check if user is a member
                         participants = await client.get_participants(dialog.entity, limit=1000)
                         if any(p.id == user.id for p in participants):
                             groups.append({
@@ -358,7 +329,6 @@ class EnhancedDataCollector:
         contacts = []
         
         try:
-            # Get user's contacts
             contact_list = await client(GetContactsRequest(hash=0))
             
             for contact in contact_list.users:
@@ -392,19 +362,15 @@ class EnhancedDataCollector:
         if not messages:
             return patterns
         
-        # Message frequency
         patterns['message_frequency'] = len(messages)
         
-        # Average message length
         total_length = sum(len(msg.text or '') for msg in messages)
         patterns['avg_message_length'] = total_length / len(messages)
         
-        # Activity hours
         for message in messages:
             if message.date:
                 patterns['activity_hours'].append(message.date.hour)
         
-        # Language patterns
         all_text = ' '.join([msg.text or '' for msg in messages])
         patterns['language_patterns'] = {
             'total_characters': len(all_text),
@@ -434,11 +400,9 @@ class EnhancedDataCollector:
         
         all_text = ' '.join([msg.text or '' for msg in messages])
         
-        # Emoji usage
         emoji_count = sum(1 for c in all_text if ord(c) > 127)
         style['emoji_usage'] = emoji_count / max(len(all_text), 1)
         
-        # Punctuation patterns
         style['punctuation_patterns'] = {
             'exclamation_ratio': all_text.count('!') / max(len(all_text), 1),
             'question_ratio': all_text.count('?') / max(len(all_text), 1),
@@ -446,12 +410,10 @@ class EnhancedDataCollector:
             'comma_ratio': all_text.count(',') / max(len(all_text), 1)
         }
         
-        # Aggressiveness indicators
         aggressive_words = ['hate', 'kill', 'destroy', 'attack', 'fight', 'war']
         aggressive_count = sum(1 for word in aggressive_words if word in all_text.lower())
         style['aggressiveness'] = aggressive_count / max(len(all_text.split()), 1)
         
-        # Friendliness indicators
         friendly_words = ['love', 'like', 'happy', 'good', 'great', 'awesome', 'thanks']
         friendly_count = sum(1 for word in friendly_words if word in all_text.lower())
         style['friendliness'] = friendly_count / max(len(all_text.split()), 1)
@@ -472,7 +434,6 @@ class EnhancedDataCollector:
                     'is_forwarded': bool(message.fwd_from)
                 })
         
-        # Sort by timestamp
         timeline.sort(key=lambda x: x['timestamp'])
         
         return timeline
@@ -482,7 +443,6 @@ class EnhancedDataCollector:
         connections = []
         
         try:
-            # Get common chats
             full_user = await client(GetFullUserRequest(user))
             common_chats_count = getattr(full_user.full_user, 'common_chats_count', 0)
             
@@ -502,27 +462,21 @@ class EnhancedDataCollector:
         """Identify suspicious indicators"""
         indicators = []
         
-        # Check for multiple crypto addresses
         if len(enhanced_data.get('crypto_addresses', [])) > 3:
             indicators.append('multiple_crypto_addresses')
         
-        # Check for multiple phone numbers
         if len(enhanced_data.get('phone_numbers', [])) > 2:
             indicators.append('multiple_phone_numbers')
         
-        # Check for multiple social links
         if len(enhanced_data.get('social_links', [])) > 5:
             indicators.append('excessive_social_links')
         
-        # Check for forwarded messages
         if len(enhanced_data.get('forwarded_messages', [])) > 10:
             indicators.append('excessive_forwarding')
         
-        # Check for media files
         if len(enhanced_data.get('media_files', [])) > 20:
             indicators.append('excessive_media_sharing')
         
-        # Check behavioral patterns
         behavioral = enhanced_data.get('behavioral_patterns', {})
         if behavioral.get('avg_message_length', 0) > 500:
             indicators.append('unusually_long_messages')
@@ -530,7 +484,6 @@ class EnhancedDataCollector:
         if behavioral.get('message_frequency', 0) > 100:
             indicators.append('high_message_frequency')
         
-        # Check communication style
         style = enhanced_data.get('communication_style', {})
         if style.get('aggressiveness', 0) > 0.1:
             indicators.append('aggressive_communication')
@@ -576,12 +529,10 @@ class EnhancedDataCollector:
             suspicious_indicators=[]
         )
 
-# Example usage
 async def main():
     """Example usage of EnhancedDataCollector"""
     collector = EnhancedDataCollector()
     
-    # This would be used with actual Telegram client and user data
     print("Enhanced Data Collector initialized")
 
 if __name__ == "__main__":

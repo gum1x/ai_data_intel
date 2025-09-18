@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Real-Time Analytics Engine for Enterprise Telegram Intelligence Platform
 Advanced streaming analytics with Apache Kafka, Spark, and real-time ML inference
@@ -19,7 +18,6 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import multiprocessing as mp
 
-# Real-time streaming components
 import kafka
 from kafka import KafkaProducer, KafkaConsumer, KafkaAdminClient
 from kafka.admin import ConfigResource, ConfigResourceType, NewTopic
@@ -28,7 +26,6 @@ import avro.schema
 from avro.datafile import DataFileWriter, DataFileReader
 from avro.io import DatumWriter, DatumReader
 
-# Advanced analytics
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 import apache_spark
@@ -41,14 +38,12 @@ from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.regression import LinearRegression
 
-# Time series and streaming
 import streamz
 from streamz import Stream
 import dask
 import dask.dataframe as dd
 from dask.distributed import Client, as_completed
 
-# Advanced ML and AI
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -56,9 +51,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from transformers import AutoTokenizer, AutoModel
-import faiss  # Facebook AI Similarity Search
+import faiss
 
-# Database and caching
 import redis
 import memcached
 from cassandra.cluster import Cluster
@@ -66,7 +60,6 @@ from cassandra.auth import PlainTextAuthProvider
 import elasticsearch
 from elasticsearch import Elasticsearch
 
-# Monitoring and observability
 import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge, Summary
 import jaeger_client
@@ -92,7 +85,7 @@ class StreamEvent:
     data: Dict[str, Any]
     metadata: Dict[str, Any]
     correlation_id: Optional[str] = None
-    priority: int = 1  # 1=low, 5=critical
+    priority: int = 1
 
 @dataclass
 class AnalyticsWindow:
@@ -100,8 +93,8 @@ class AnalyticsWindow:
     window_id: str
     start_time: datetime
     end_time: datetime
-    window_size: int  # seconds
-    slide_size: int   # seconds
+    window_size: int
+    slide_size: int
     data: List[StreamEvent]
     aggregations: Dict[str, Any]
 
@@ -117,19 +110,14 @@ class RealTimeMLInference:
     
     def initialize_models(self):
         """Initialize real-time ML models"""
-        # Behavioral prediction model
         self.models['behavior_prediction'] = self.create_behavior_model()
         
-        # Anomaly detection model
         self.models['anomaly_detection'] = self.create_anomaly_model()
         
-        # Threat classification model
         self.models['threat_classification'] = self.create_threat_model()
         
-        # Network analysis model
         self.models['network_analysis'] = self.create_network_model()
         
-        # Sentiment analysis model
         self.models['sentiment_analysis'] = self.create_sentiment_model()
     
     def create_behavior_model(self):
@@ -140,7 +128,7 @@ class RealTimeMLInference:
             layers.Dense(64, activation='relu'),
             layers.Dropout(0.3),
             layers.Dense(32, activation='relu'),
-            layers.Dense(4, activation='softmax')  # 4 behavior types
+            layers.Dense(4, activation='softmax')
         ])
         
         model.compile(
@@ -157,7 +145,7 @@ class RealTimeMLInference:
             layers.Dense(64, activation='relu', input_shape=(30,)),
             layers.Dense(32, activation='relu'),
             layers.Dense(16, activation='relu'),
-            layers.Dense(1, activation='sigmoid')  # Anomaly score
+            layers.Dense(1, activation='sigmoid')
         ])
         
         model.compile(
@@ -176,7 +164,7 @@ class RealTimeMLInference:
             layers.Dense(128, activation='relu'),
             layers.Dropout(0.3),
             layers.Dense(64, activation='relu'),
-            layers.Dense(8, activation='softmax')  # 8 threat categories
+            layers.Dense(8, activation='softmax')
         ])
         
         model.compile(
@@ -194,7 +182,7 @@ class RealTimeMLInference:
             layers.Dropout(0.3),
             layers.Dense(64, activation='relu'),
             layers.Dense(32, activation='relu'),
-            layers.Dense(3, activation='softmax')  # 3 network roles
+            layers.Dense(3, activation='softmax')
         ])
         
         model.compile(
@@ -210,7 +198,7 @@ class RealTimeMLInference:
         model = keras.Sequential([
             layers.Dense(64, activation='relu', input_shape=(20,)),
             layers.Dense(32, activation='relu'),
-            layers.Dense(3, activation='softmax')  # positive, negative, neutral
+            layers.Dense(3, activation='softmax')
         ])
         
         model.compile(
@@ -224,12 +212,10 @@ class RealTimeMLInference:
     async def predict_behavior(self, features: np.ndarray) -> Dict[str, float]:
         """Real-time behavior prediction"""
         try:
-            # Check cache first
             cache_key = hashlib.md5(features.tobytes()).hexdigest()
             if cache_key in self.prediction_cache:
                 return self.prediction_cache[cache_key]
             
-            # Make prediction
             model = self.models['behavior_prediction']
             prediction = model.predict(features.reshape(1, -1))[0]
             
@@ -240,7 +226,6 @@ class RealTimeMLInference:
                 'manipulative': float(prediction[3])
             }
             
-            # Cache result
             self.prediction_cache[cache_key] = result
             
             return result
@@ -322,19 +307,15 @@ class KafkaStreamingEngine:
     def initialize_kafka(self):
         """Initialize Kafka components"""
         try:
-            # Initialize admin client
             self.admin_client = KafkaAdminClient(
                 bootstrap_servers=self.bootstrap_servers,
                 client_id='telegram_intelligence_admin'
             )
             
-            # Create topics
             self.create_topics()
             
-            # Initialize producers
             self.initialize_producers()
             
-            # Initialize consumers
             self.initialize_consumers()
             
             logging.info("Kafka streaming engine initialized")
@@ -418,12 +399,10 @@ class KafkaStreamingEngine:
                 logging.error(f"No producer for topic: {topic}")
                 return
             
-            # Serialize event
             event_data = asdict(event)
             event_data['timestamp'] = event.timestamp.isoformat()
             event_data['event_type'] = event.event_type.value
             
-            # Publish
             future = producer.send(topic, value=event_data, key=key)
             record_metadata = future.get(timeout=10)
             
@@ -442,14 +421,12 @@ class KafkaStreamingEngine:
             
             for message in consumer:
                 try:
-                    # Deserialize event
                     event_data = message.value
                     event_data['timestamp'] = datetime.fromisoformat(event_data['timestamp'])
                     event_data['event_type'] = StreamEventType(event_data['event_type'])
                     
                     event = StreamEvent(**event_data)
                     
-                    # Process event
                     await callback(event)
                     
                 except Exception as e:
@@ -494,7 +471,6 @@ class SparkAnalyticsEngine:
                 .option("startingOffsets", "latest") \
                 .load()
             
-            # Parse JSON data
             df = df.select(
                 col("key").cast("string"),
                 col("value").cast("string"),
@@ -512,7 +488,6 @@ class SparkAnalyticsEngine:
     def process_message_stream(self, df: 'DataFrame') -> 'DataFrame':
         """Process message stream with analytics"""
         try:
-            # Parse JSON and extract fields
             parsed_df = df.select(
                 col("key"),
                 col("timestamp"),
@@ -523,7 +498,6 @@ class SparkAnalyticsEngine:
                 col("data.*")
             )
             
-            # Add time-based features
             enriched_df = parsed_df.withColumn(
                 "hour", hour(col("timestamp"))
             ).withColumn(
@@ -532,7 +506,6 @@ class SparkAnalyticsEngine:
                 "is_weekend", when(col("day_of_week").isin([1, 7]), 1).otherwise(0)
             )
             
-            # Window aggregations
             windowed_df = enriched_df.withWatermark("timestamp", "10 minutes") \
                 .groupBy(
                     window(col("timestamp"), "5 minutes", "1 minute"),
@@ -563,7 +536,6 @@ class SparkAnalyticsEngine:
     def detect_anomalies_spark(self, df: 'DataFrame') -> 'DataFrame':
         """Detect anomalies using Spark ML"""
         try:
-            # Prepare features
             feature_cols = ["message_count", "avg_message_length", "unique_chats", "hour", "is_weekend"]
             
             assembler = VectorAssembler(
@@ -571,13 +543,11 @@ class SparkAnalyticsEngine:
                 outputCol="features"
             )
             
-            # Standardize features
             scaler = StandardScaler(
                 inputCol="features",
                 outputCol="scaled_features"
             )
             
-            # K-means clustering for anomaly detection
             kmeans = KMeans(
                 featuresCol="scaled_features",
                 predictionCol="cluster",
@@ -585,14 +555,11 @@ class SparkAnalyticsEngine:
                 seed=42
             )
             
-            # Create pipeline
             pipeline = Pipeline(stages=[assembler, scaler, kmeans])
             model = pipeline.fit(df)
             
-            # Make predictions
             predictions = model.transform(df)
             
-            # Calculate distance to cluster centers for anomaly scoring
             predictions_with_anomaly = predictions.withColumn(
                 "anomaly_score",
                 expr("""
@@ -670,17 +637,13 @@ class RealTimeAnalyticsEngine:
         """Start the real-time analytics engine"""
         logging.info("Starting real-time analytics engine...")
         
-        # Start Kafka consumers
         for topic, consumer in self.kafka_engine.consumers.items():
             asyncio.create_task(self.consume_and_process_events(topic, consumer))
         
-        # Start Spark streaming jobs
         await self.start_spark_streaming_jobs()
         
-        # Start windowed analytics
         asyncio.create_task(self.windowed_analytics_loop())
         
-        # Start ML model updates
         asyncio.create_task(self.ml_model_update_loop())
         
         logging.info("Real-time analytics engine started")
@@ -690,7 +653,6 @@ class RealTimeAnalyticsEngine:
         try:
             for message in consumer:
                 try:
-                    # Parse event
                     event_data = message.value
                     event = StreamEvent(
                         event_id=event_data.get('event_id', str(uuid.uuid4())),
@@ -703,10 +665,8 @@ class RealTimeAnalyticsEngine:
                         priority=event_data.get('priority', 1)
                     )
                     
-                    # Process event
                     await self.process_event(event)
                     
-                    # Update metrics
                     self.metrics['events_processed'].labels(event_type=event.event_type.value).inc()
                     
                 except Exception as e:
@@ -720,12 +680,10 @@ class RealTimeAnalyticsEngine:
         start_time = time.time()
         
         try:
-            # Get processor for event type
             processor = self.event_processors.get(event.event_type)
             if processor:
                 await processor(event)
             
-            # Update processing duration metric
             duration = time.time() - start_time
             self.metrics['processing_duration'].observe(duration)
             
@@ -737,15 +695,12 @@ class RealTimeAnalyticsEngine:
         try:
             message_data = event.data
             
-            # Extract features for ML inference
             features = self.extract_message_features(message_data)
             
-            # Run real-time ML predictions
             behavior_prediction = await self.ml_inference.predict_behavior(features)
             sentiment_analysis = await self.ml_inference.analyze_sentiment(features)
             anomaly_score = await self.ml_inference.detect_anomaly(features)
             
-            # Store results in Redis for fast access
             user_id = message_data.get('user_id')
             if user_id:
                 cache_key = f"user_analysis:{user_id}"
@@ -757,11 +712,9 @@ class RealTimeAnalyticsEngine:
                 }
                 self.redis_client.setex(cache_key, 3600, json.dumps(analysis_data))
             
-            # Check for anomalies
             if anomaly_score > 0.8:
                 await self.handle_anomaly_detection(user_id, anomaly_score, message_data)
             
-            # Update active users metric
             self.metrics['active_users'].set(len(self.redis_client.keys("user_analysis:*")))
             
         except Exception as e:
@@ -772,14 +725,11 @@ class RealTimeAnalyticsEngine:
         try:
             user_data = event.data
             
-            # Initialize user tracking
             user_id = user_data.get('user_id')
             if user_id:
-                # Store user info in Redis
                 user_key = f"user_info:{user_id}"
                 self.redis_client.setex(user_key, 86400, json.dumps(user_data))
                 
-                # Update network analysis
                 await self.update_network_analysis(user_data)
             
         except Exception as e:
@@ -790,13 +740,10 @@ class RealTimeAnalyticsEngine:
         try:
             activity_data = event.data
             
-            # Log suspicious activity
             logging.warning(f"Suspicious activity detected: {activity_data}")
             
-            # Store in Elasticsearch for search and analysis
             await self.store_suspicious_activity(activity_data)
             
-            # Trigger additional analysis
             await self.trigger_deep_analysis(activity_data)
             
         except Exception as e:
@@ -807,14 +754,11 @@ class RealTimeAnalyticsEngine:
         try:
             threat_data = event.data
             
-            # Update threat detection metrics
             threat_type = threat_data.get('threat_type', 'unknown')
             self.metrics['threat_detections'].labels(threat_type=threat_type).inc()
             
-            # Store threat intelligence
             await self.store_threat_intelligence(threat_data)
             
-            # Alert security team
             await self.alert_security_team(threat_data)
             
         except Exception as e:
@@ -825,10 +769,8 @@ class RealTimeAnalyticsEngine:
         try:
             intelligence_data = event.data
             
-            # Update intelligence database
             await self.update_intelligence_database(intelligence_data)
             
-            # Trigger correlation analysis
             await self.correlate_intelligence(intelligence_data)
             
         except Exception as e:
@@ -839,11 +781,9 @@ class RealTimeAnalyticsEngine:
         try:
             prediction_data = event.data
             
-            # Update ML prediction metrics
             model_type = prediction_data.get('model_type', 'unknown')
             self.metrics['ml_predictions'].labels(model_type=model_type).inc()
             
-            # Store prediction results
             await self.store_ml_prediction(prediction_data)
             
         except Exception as e:
@@ -854,13 +794,10 @@ class RealTimeAnalyticsEngine:
         try:
             anomaly_data = event.data
             
-            # Update anomaly detection metrics
             self.metrics['anomaly_detections'].inc()
             
-            # Store anomaly data
             await self.store_anomaly_data(anomaly_data)
             
-            # Trigger investigation
             await self.trigger_anomaly_investigation(anomaly_data)
             
         except Exception as e:
@@ -870,26 +807,19 @@ class RealTimeAnalyticsEngine:
         """Extract features from message data for ML inference"""
         features = []
         
-        # Message length
         message_text = message_data.get('message', '')
         features.append(len(message_text))
         
-        # Word count
         features.append(len(message_text.split()))
         
-        # Character diversity
         features.append(len(set(message_text)) / max(len(message_text), 1))
         
-        # Special characters
         features.append(sum(1 for c in message_text if not c.isalnum() and c != ' '))
         
-        # Uppercase ratio
         features.append(sum(1 for c in message_text if c.isupper()) / max(len(message_text), 1))
         
-        # Number ratio
         features.append(sum(1 for c in message_text if c.isdigit()) / max(len(message_text), 1))
         
-        # Time-based features
         timestamp = message_data.get('timestamp')
         if timestamp:
             dt = datetime.fromisoformat(timestamp)
@@ -897,7 +827,6 @@ class RealTimeAnalyticsEngine:
         else:
             features.extend([0, 0, 0])
         
-        # User features
         features.extend([
             len(message_data.get('username', '')),
             message_data.get('is_verified', False),
@@ -905,7 +834,6 @@ class RealTimeAnalyticsEngine:
             message_data.get('is_bot', False)
         ])
         
-        # Pad or truncate to fixed size
         target_size = 20
         if len(features) < target_size:
             features.extend([0] * (target_size - len(features)))
@@ -917,7 +845,6 @@ class RealTimeAnalyticsEngine:
     async def handle_anomaly_detection(self, user_id: str, anomaly_score: float, message_data: Dict[str, Any]):
         """Handle anomaly detection"""
         try:
-            # Create anomaly event
             anomaly_event = StreamEvent(
                 event_id=str(uuid.uuid4()),
                 event_type=StreamEventType.ANOMALY_DETECTED,
@@ -933,7 +860,6 @@ class RealTimeAnalyticsEngine:
                 priority=3 if anomaly_score > 0.9 else 2
             )
             
-            # Publish anomaly event
             await self.kafka_engine.publish_event('anomaly_alerts', anomaly_event, user_id)
             
         except Exception as e:
@@ -942,16 +868,12 @@ class RealTimeAnalyticsEngine:
     async def start_spark_streaming_jobs(self):
         """Start Spark streaming jobs"""
         try:
-            # Create streaming DataFrames
             message_stream = self.spark_engine.create_streaming_dataframe('telegram_messages')
             if message_stream:
-                # Process message stream
                 processed_stream = self.spark_engine.process_message_stream(message_stream)
                 
-                # Detect anomalies
                 anomaly_stream = self.spark_engine.detect_anomalies_spark(processed_stream)
                 
-                # Start streaming query
                 query = self.spark_engine.run_streaming_query(
                     anomaly_stream, 
                     "hdfs://localhost:9000/telegram_analytics/anomalies"
@@ -967,9 +889,8 @@ class RealTimeAnalyticsEngine:
         """Windowed analytics processing loop"""
         while True:
             try:
-                # Process 5-minute windows
-                await self.process_analytics_window(300)  # 5 minutes
-                await asyncio.sleep(60)  # Check every minute
+                await self.process_analytics_window(300)
+                await asyncio.sleep(60)
                 
             except Exception as e:
                 logging.error(f"Windowed analytics error: {e}")
@@ -981,28 +902,24 @@ class RealTimeAnalyticsEngine:
             end_time = datetime.now()
             start_time = end_time - timedelta(seconds=window_size)
             
-            # Get events in window
             window_events = await self.get_events_in_window(start_time, end_time)
             
             if not window_events:
                 return
             
-            # Create analytics window
             window_id = f"{start_time.isoformat()}_{end_time.isoformat()}"
             analytics_window = AnalyticsWindow(
                 window_id=window_id,
                 start_time=start_time,
                 end_time=end_time,
                 window_size=window_size,
-                slide_size=60,  # 1 minute slide
+                slide_size=60,
                 data=window_events,
                 aggregations={}
             )
             
-            # Calculate aggregations
             await self.calculate_window_aggregations(analytics_window)
             
-            # Store results
             self.analytics_windows[window_id] = analytics_window
             
         except Exception as e:
@@ -1010,8 +927,6 @@ class RealTimeAnalyticsEngine:
     
     async def get_events_in_window(self, start_time: datetime, end_time: datetime) -> List[StreamEvent]:
         """Get events in time window"""
-        # This would query the event store for events in the time window
-        # For now, return empty list
         return []
     
     async def calculate_window_aggregations(self, window: AnalyticsWindow):
@@ -1019,7 +934,6 @@ class RealTimeAnalyticsEngine:
         try:
             events = window.data
             
-            # Message count by user
             user_message_counts = defaultdict(int)
             for event in events:
                 if event.event_type == StreamEventType.MESSAGE_RECEIVED:
@@ -1027,13 +941,10 @@ class RealTimeAnalyticsEngine:
                     if user_id:
                         user_message_counts[user_id] += 1
             
-            # Threat detection count
             threat_count = sum(1 for event in events if event.event_type == StreamEventType.THREAT_DETECTED)
             
-            # Anomaly count
             anomaly_count = sum(1 for event in events if event.event_type == StreamEventType.ANOMALY_DETECTED)
             
-            # Store aggregations
             window.aggregations = {
                 'user_message_counts': dict(user_message_counts),
                 'threat_count': threat_count,
@@ -1049,9 +960,8 @@ class RealTimeAnalyticsEngine:
         """ML model update loop"""
         while True:
             try:
-                # Update models with new data
                 await self.update_ml_models()
-                await asyncio.sleep(3600)  # Update every hour
+                await asyncio.sleep(3600)
                 
             except Exception as e:
                 logging.error(f"ML model update error: {e}")
@@ -1060,14 +970,11 @@ class RealTimeAnalyticsEngine:
     async def update_ml_models(self):
         """Update ML models with new data"""
         try:
-            # This would retrain models with new data
-            # For now, just log
             logging.info("ML models updated")
             
         except Exception as e:
             logging.error(f"ML model update error: {e}")
     
-    # Helper methods for data storage and retrieval
     async def store_suspicious_activity(self, activity_data: Dict[str, Any]):
         """Store suspicious activity in Elasticsearch"""
         try:
@@ -1088,20 +995,17 @@ class RealTimeAnalyticsEngine:
     async def store_threat_intelligence(self, threat_data: Dict[str, Any]):
         """Store threat intelligence"""
         try:
-            # Store in multiple systems for redundancy
             doc = {
                 'timestamp': datetime.now().isoformat(),
                 'threat_data': threat_data,
                 'type': 'threat_intelligence'
             }
             
-            # Elasticsearch
             self.elasticsearch_client.index(
                 index='threat_intelligence',
                 body=doc
             )
             
-            # Redis for fast access
             threat_key = f"threat:{threat_data.get('threat_id', uuid.uuid4())}"
             self.redis_client.setex(threat_key, 86400, json.dumps(doc))
             
@@ -1142,7 +1046,6 @@ class RealTimeAnalyticsEngine:
         except Exception as e:
             logging.error(f"Anomaly data storage error: {e}")
     
-    # Additional helper methods would be implemented here
     async def update_network_analysis(self, user_data: Dict[str, Any]):
         """Update network analysis"""
         pass
@@ -1167,7 +1070,6 @@ class RealTimeAnalyticsEngine:
         """Trigger anomaly investigation"""
         pass
 
-# Main execution
 async def main():
     """Main execution function"""
     analytics_engine = RealTimeAnalyticsEngine()
@@ -1175,7 +1077,6 @@ async def main():
     try:
         await analytics_engine.start_analytics_engine()
         
-        # Keep running
         while True:
             await asyncio.sleep(3600)
             

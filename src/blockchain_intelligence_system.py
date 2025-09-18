@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Blockchain Intelligence System
 Advanced blockchain integration for secure data storage and intelligence gathering
@@ -17,7 +16,6 @@ from eth_typing import HexStr
 from eth_utils import to_checksum_address
 import aiohttp
 
-# Blockchain and Crypto
 from web3 import Web3, AsyncWeb3
 from web3.middleware import geth_poa_middleware
 from eth_account import Account
@@ -27,11 +25,9 @@ from eth_keys import keys
 import bitcoin
 from bitcoin.wallet import CBitcoinSecret, P2PKHBitcoinAddress
 
-# IPFS for decentralized storage
 import ipfshttpclient
 from multiformats import multibase, multihash
 
-# Smart contract interaction
 from solcx import compile_source
 from eth_abi import encode_abi, decode_abi
 
@@ -189,7 +185,6 @@ class BlockchainIntelligenceSystem:
     """Main blockchain intelligence system"""
     
     def __init__(self):
-        # Initialize blockchain connections
         self.web3_clients = {}
         self.ipfs_client = None
         self.contracts = {}
@@ -199,25 +194,20 @@ class BlockchainIntelligenceSystem:
     def initialize_system(self):
         """Initialize blockchain and IPFS connections"""
         try:
-            # Initialize Ethereum connection
             self.web3_clients[BlockchainType.ETHEREUM] = AsyncWeb3(
                 AsyncWeb3.AsyncHTTPProvider('https://mainnet.infura.io/v3/YOUR_INFURA_KEY')
             )
             
-            # Initialize Polygon connection
             self.web3_clients[BlockchainType.POLYGON] = AsyncWeb3(
                 AsyncWeb3.AsyncHTTPProvider('https://polygon-rpc.com')
             )
             
-            # Initialize BSC connection
             self.web3_clients[BlockchainType.BSC] = AsyncWeb3(
                 AsyncWeb3.AsyncHTTPProvider('https://bsc-dataseed.binance.org/')
             )
             
-            # Initialize IPFS
             self.ipfs_client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
             
-            # Deploy or load contracts
             self.deploy_contracts()
             
             logging.info("Blockchain intelligence system initialized")
@@ -228,11 +218,9 @@ class BlockchainIntelligenceSystem:
     def deploy_contracts(self):
         """Deploy or load smart contracts"""
         try:
-            # Compile contract
             compiled_sol = compile_source(self.CONTRACT_SOURCE)
             contract_interface = compiled_sol['<stdin>:IntelligenceStorage']
             
-            # Deploy to each chain
             for blockchain_type, web3 in self.web3_clients.items():
                 try:
                     contract_address = self.get_existing_contract(blockchain_type)
@@ -254,7 +242,6 @@ class BlockchainIntelligenceSystem:
     
     def get_existing_contract(self, blockchain_type: BlockchainType) -> Optional[str]:
         """Get existing contract address"""
-        # This would load from configuration or database
         return None
     
     async def deploy_new_contract(self, web3: AsyncWeb3, 
@@ -269,27 +256,21 @@ class BlockchainIntelligenceSystem:
                 bytecode=contract_interface['bin']
             )
             
-            # Get nonce
             nonce = await web3.eth.get_transaction_count(account.address)
             
-            # Estimate gas
             gas_estimate = await contract.constructor().estimate_gas()
             
-            # Get gas price
             gas_price = await web3.eth.gas_price
             
-            # Build transaction
             transaction = {
                 'nonce': nonce,
-                'gas': int(gas_estimate * 1.2),  # Add 20% buffer
+                'gas': int(gas_estimate * 1.2),
                 'gasPrice': gas_price,
                 'from': account.address
             }
             
-            # Deploy contract
             tx_hash = await contract.constructor().transact(transaction)
             
-            # Wait for receipt
             receipt = await web3.eth.wait_for_transaction_receipt(tx_hash)
             
             return receipt.contractAddress
@@ -300,7 +281,6 @@ class BlockchainIntelligenceSystem:
     
     def get_deployment_account(self, blockchain_type: BlockchainType) -> Account:
         """Get account for contract deployment"""
-        # This would load from secure configuration
         private_key = "YOUR_PRIVATE_KEY"
         return Account.from_key(private_key)
     
@@ -312,7 +292,7 @@ class BlockchainIntelligenceSystem:
                 return await self.store_on_ipfs(data)
             elif storage_type == StorageType.BLOCKCHAIN:
                 return await self.store_on_blockchain(data)
-            else:  # HYBRID
+            else:
                 return await self.store_hybrid(data)
                 
         except Exception as e:
@@ -322,10 +302,8 @@ class BlockchainIntelligenceSystem:
     async def store_on_ipfs(self, data: IntelligenceData) -> Dict[str, Any]:
         """Store data on IPFS"""
         try:
-            # Encrypt sensitive data
             encrypted_data = self.encrypt_sensitive_data(data)
             
-            # Add to IPFS
             ipfs_result = self.ipfs_client.add_json(encrypted_data)
             ipfs_hash = ipfs_result['Hash']
             
@@ -343,25 +321,21 @@ class BlockchainIntelligenceSystem:
     async def store_on_blockchain(self, data: IntelligenceData) -> Dict[str, Any]:
         """Store data directly on blockchain"""
         try:
-            # Choose blockchain based on data size and requirements
             blockchain_type = self.select_blockchain(data)
             contract = self.contracts[blockchain_type]
             
-            # Prepare data
             data_bytes = Web3.keccak(text=json.dumps(data.content))
             
-            # Store on blockchain
             tx_hash = await contract.functions.storeRecord(
                 data_bytes,
-                "",  # No IPFS hash
+                "",
                 data.source,
                 data.classification,
                 data.hash,
-                True,  # Encrypted
-                []  # No additional readers
+                True,
+                []
             ).transact()
             
-            # Wait for receipt
             receipt = await self.web3_clients[blockchain_type].eth.wait_for_transaction_receipt(tx_hash)
             
             return {
@@ -379,30 +353,25 @@ class BlockchainIntelligenceSystem:
     async def store_hybrid(self, data: IntelligenceData) -> Dict[str, Any]:
         """Store data using hybrid approach (IPFS + Blockchain)"""
         try:
-            # Store main data on IPFS
             ipfs_result = await self.store_on_ipfs(data)
             if 'error' in ipfs_result:
                 raise Exception(ipfs_result['error'])
             
-            # Store reference on blockchain
             blockchain_type = self.select_blockchain(data)
             contract = self.contracts[blockchain_type]
             
-            # Prepare data
             data_bytes = Web3.keccak(text=data.data_id)
             
-            # Store on blockchain
             tx_hash = await contract.functions.storeRecord(
                 data_bytes,
                 ipfs_result['ipfs_hash'],
                 data.source,
                 data.classification,
                 data.hash,
-                True,  # Encrypted
-                []  # No additional readers
+                True,
+                []
             ).transact()
             
-            # Wait for receipt
             receipt = await self.web3_clients[blockchain_type].eth.wait_for_transaction_receipt(tx_hash)
             
             return {
@@ -420,15 +389,11 @@ class BlockchainIntelligenceSystem:
     
     def select_blockchain(self, data: IntelligenceData) -> BlockchainType:
         """Select best blockchain based on data requirements"""
-        # This would implement sophisticated selection logic
-        # For now, default to Polygon for cost-effectiveness
         return BlockchainType.POLYGON
     
     def encrypt_sensitive_data(self, data: IntelligenceData) -> Dict[str, Any]:
         """Encrypt sensitive data"""
         try:
-            # This would implement actual encryption
-            # For now, return mock encrypted data
             return {
                 'encrypted_content': str(data.content),
                 'metadata': data.metadata,
@@ -443,16 +408,13 @@ class BlockchainIntelligenceSystem:
     async def retrieve_intelligence_data(self, data_id: str) -> Optional[IntelligenceData]:
         """Retrieve intelligence data"""
         try:
-            # Check all blockchains
             for blockchain_type, contract in self.contracts.items():
                 try:
-                    # Get record
                     record = await contract.functions.getRecord(
                         Web3.keccak(text=data_id)
                     ).call()
                     
-                    if record and record[0]:  # Has IPFS hash
-                        # Get from IPFS
+                    if record and record[0]:
                         ipfs_data = self.ipfs_client.cat(record[0])
                         decrypted_data = self.decrypt_data(ipfs_data)
                         
@@ -480,8 +442,6 @@ class BlockchainIntelligenceSystem:
     def decrypt_data(self, encrypted_data: bytes) -> Dict[str, Any]:
         """Decrypt data"""
         try:
-            # This would implement actual decryption
-            # For now, return mock decrypted data
             return json.loads(encrypted_data)
         except Exception as e:
             logging.error(f"Decryption error: {e}")
@@ -496,16 +456,13 @@ class BlockchainIntelligenceSystem:
                 'cross_reference_verified': False
             }
             
-            # Get data
             data = await self.retrieve_intelligence_data(data_id)
             if not data:
                 return verification_results
             
-            # Verify IPFS integrity
             if data.content:
                 verification_results['ipfs_verified'] = True
             
-            # Verify blockchain integrity
             for blockchain_type, contract in self.contracts.items():
                 try:
                     record = await contract.functions.getRecord(
@@ -519,7 +476,6 @@ class BlockchainIntelligenceSystem:
                 except Exception as e:
                     continue
             
-            # Verify cross-reference integrity
             if verification_results['ipfs_verified'] and verification_results['blockchain_verified']:
                 verification_results['cross_reference_verified'] = True
             
@@ -537,13 +493,10 @@ class BlockchainIntelligenceSystem:
         try:
             web3 = self.web3_clients[blockchain_type]
             
-            # Get latest block
             latest_block = await web3.eth.block_number
             
-            # Analyze last 10000 blocks
             start_block = max(0, latest_block - 10000)
             
-            # Get transactions
             for block_number in range(start_block, latest_block + 1):
                 block = await web3.eth.get_block(block_number, full_transactions=True)
                 
@@ -551,7 +504,6 @@ class BlockchainIntelligenceSystem:
                     if tx['to'] and (tx['to'].lower() == address.lower() or 
                                    tx['from'].lower() == address.lower()):
                         
-                        # Get transaction receipt
                         receipt = await web3.eth.get_transaction_receipt(tx['hash'])
                         
                         transaction = BlockchainTransaction(
@@ -579,7 +531,6 @@ class BlockchainIntelligenceSystem:
                                         callback: Callable[[BlockchainTransaction], None]):
         """Monitor blockchain activity for addresses"""
         try:
-            # Monitor each blockchain
             for blockchain_type, web3 in self.web3_clients.items():
                 asyncio.create_task(
                     self.monitor_blockchain(blockchain_type, web3, addresses, callback)
@@ -594,15 +545,12 @@ class BlockchainIntelligenceSystem:
         """Monitor specific blockchain"""
         try:
             while True:
-                # Get latest block
                 block = await web3.eth.get_block('latest', full_transactions=True)
                 
-                # Check transactions
                 for tx in block.transactions:
                     if tx['to'] and (tx['to'].lower() in [addr.lower() for addr in addresses] or
                                    tx['from'].lower() in [addr.lower() for addr in addresses]):
                         
-                        # Get receipt
                         receipt = await web3.eth.get_transaction_receipt(tx['hash'])
                         
                         transaction = BlockchainTransaction(
@@ -611,29 +559,26 @@ class BlockchainIntelligenceSystem:
                             from_address=tx['from'],
                             to_address=tx['to'],
                             value=web3.from_wei(tx['value'], 'ether'),
-                            timestamp=datetime.now(),  # Block timestamp not available in new blocks
+                            timestamp=datetime.now(),
                             data=tx.get('input'),
                             gas_used=receipt['gasUsed'],
                             status=receipt['status'],
                             block_number=block.number
                         )
                         
-                        # Call callback
                         callback(transaction)
                 
-                await asyncio.sleep(1)  # Wait for next block
+                await asyncio.sleep(1)
                 
         except Exception as e:
             logging.error(f"Blockchain monitoring error: {e}")
-            await asyncio.sleep(60)  # Wait before retrying
+            await asyncio.sleep(60)
 
-# Main execution
 async def main():
     """Main execution function"""
     system = BlockchainIntelligenceSystem()
     
     try:
-        # Test data storage
         test_data = IntelligenceData(
             data_id=str(time.time()),
             content={'test': 'data'},
@@ -648,7 +593,6 @@ async def main():
         result = await system.store_intelligence_data(test_data)
         print(f"Storage result: {result}")
         
-        # Keep running
         while True:
             await asyncio.sleep(3600)
             

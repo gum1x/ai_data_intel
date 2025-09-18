@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 AI Agents System - Specialized agents for different intelligence tasks with inter-agent communication
 """
@@ -15,7 +14,6 @@ import threading
 import queue
 from abc import ABC, abstractmethod
 
-# Message passing
 import zmq
 import redis
 from kafka import KafkaProducer, KafkaConsumer
@@ -74,7 +72,6 @@ class BaseAgent(ABC):
         self.knowledge_base = {}
         self.task_history = []
         
-        # Communication
         self.zmq_context = zmq.Context()
         self.redis_client = redis.Redis(host='localhost', port=6379, db=0)
         self.kafka_producer = KafkaProducer(
@@ -86,11 +83,9 @@ class BaseAgent(ABC):
     
     def initialize_agent(self):
         """Initialize agent-specific components"""
-        # Create ZMQ socket for receiving messages
         self.receiver_socket = self.zmq_context.socket(zmq.PULL)
         self.receiver_socket.bind(f"tcp://*:{5550 + list(AgentType).index(self.agent_type)}")
         
-        # Create ZMQ socket for sending messages
         self.sender_socket = self.zmq_context.socket(zmq.PUSH)
         
         logging.info(f"Agent {self.agent_id} initialized")
@@ -99,10 +94,8 @@ class BaseAgent(ABC):
         """Start the agent"""
         self.is_running = True
         
-        # Start message handling
         asyncio.create_task(self.handle_messages())
         
-        # Start agent-specific tasks
         asyncio.create_task(self.run_agent_tasks())
         
         logging.info(f"Agent {self.agent_id} started")
@@ -130,11 +123,9 @@ class BaseAgent(ABC):
                 correlation_id=correlation_id
             )
             
-            # Send via ZMQ
             self.sender_socket.connect(f"tcp://localhost:{5550 + list(AgentType).index(AgentType(receiver_id.split('_')[0] + '_' + receiver_id.split('_')[1]))}")
             self.sender_socket.send_string(json.dumps(asdict(message)))
             
-            # Also send via Kafka for persistence
             self.kafka_producer.send('agent_messages', value=asdict(message))
             
             logging.info(f"Message sent from {self.agent_id} to {receiver_id}")
@@ -146,11 +137,9 @@ class BaseAgent(ABC):
         """Handle incoming messages"""
         while self.is_running:
             try:
-                # Receive message via ZMQ
                 message_data = self.receiver_socket.recv_string(zmq.NOBLOCK)
                 message = AgentMessage(**json.loads(message_data))
                 
-                # Process message
                 await self.process_message(message)
                 
             except zmq.Again:
@@ -222,13 +211,10 @@ class IntelligenceAnalystAgent(BaseAgent):
         """Run intelligence analyst tasks"""
         while self.is_running:
             try:
-                # Coordinate analysis tasks
                 await self.coordinate_analysis()
                 
-                # Generate intelligence reports
                 await self.generate_intelligence_reports()
                 
-                # Monitor threat landscape
                 await self.monitor_threat_landscape()
                 
                 await asyncio.sleep(10)
@@ -240,21 +226,18 @@ class IntelligenceAnalystAgent(BaseAgent):
     async def coordinate_analysis(self):
         """Coordinate analysis across all agents"""
         try:
-            # Request data from data collector
             await self.send_message(
                 "data_collector_001",
                 MessageType.DATA_REQUEST,
                 {"request_type": "recent_telegram_data", "limit": 1000}
             )
             
-            # Request threat analysis from threat hunter
             await self.send_message(
                 "threat_hunter_001",
                 MessageType.ANALYSIS_REQUEST,
                 {"analysis_type": "threat_assessment", "scope": "all_users"}
             )
             
-            # Request network analysis
             await self.send_message(
                 "network_analyst_001",
                 MessageType.ANALYSIS_REQUEST,
@@ -267,7 +250,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     async def generate_intelligence_reports(self):
         """Generate comprehensive intelligence reports"""
         try:
-            # Collect data from all agents
             report_data = {
                 'timestamp': datetime.now().isoformat(),
                 'threat_level': await self.assess_overall_threat_level(),
@@ -276,10 +258,8 @@ class IntelligenceAnalystAgent(BaseAgent):
                 'trends': await self.analyze_trends()
             }
             
-            # Store report
             self.knowledge_base['latest_report'] = report_data
             
-            # Notify coordinator
             await self.send_message(
                 "coordinator_001",
                 MessageType.STATUS_UPDATE,
@@ -292,11 +272,9 @@ class IntelligenceAnalystAgent(BaseAgent):
     async def monitor_threat_landscape(self):
         """Monitor overall threat landscape"""
         try:
-            # Analyze threat indicators
             threat_indicators = await self.analyze_threat_indicators()
             
             if threat_indicators['risk_level'] > 0.7:
-                # Send high-priority alert
                 await self.send_message(
                     "coordinator_001",
                     MessageType.THREAT_ALERT,
@@ -311,7 +289,6 @@ class IntelligenceAnalystAgent(BaseAgent):
         """Handle data requests"""
         try:
             if message.content.get('request_type') == 'intelligence_report':
-                # Provide latest intelligence report
                 response_data = self.knowledge_base.get('latest_report', {})
                 
                 await self.send_message(
@@ -330,7 +307,6 @@ class IntelligenceAnalystAgent(BaseAgent):
             analysis_type = message.content.get('analysis_type')
             
             if analysis_type == 'comprehensive_analysis':
-                # Perform comprehensive analysis
                 analysis_result = await self.perform_comprehensive_analysis(message.content)
                 
                 await self.send_message(
@@ -343,7 +319,6 @@ class IntelligenceAnalystAgent(BaseAgent):
         except Exception as e:
             logging.error(f"Analysis request handling error: {e}")
     
-    # Placeholder methods
     async def assess_overall_threat_level(self) -> float:
         return 0.5
     
@@ -380,13 +355,10 @@ class ThreatHunterAgent(BaseAgent):
         """Run threat hunter tasks"""
         while self.is_running:
             try:
-                # Hunt for threats
                 await self.hunt_threats()
                 
-                # Analyze threat patterns
                 await self.analyze_threat_patterns()
                 
-                # Update threat database
                 await self.update_threat_database()
                 
                 await asyncio.sleep(5)
@@ -398,18 +370,15 @@ class ThreatHunterAgent(BaseAgent):
     async def hunt_threats(self):
         """Actively hunt for threats"""
         try:
-            # Request recent data for analysis
             await self.send_message(
                 "data_collector_001",
                 MessageType.DATA_REQUEST,
                 {"request_type": "suspicious_activities", "timeframe": "last_hour"}
             )
             
-            # Analyze for threats
             threats = await self.detect_threats()
             
             for threat in threats:
-                # Alert other agents
                 await self.send_message(
                     "intelligence_analyst_001",
                     MessageType.THREAT_ALERT,
@@ -417,7 +386,6 @@ class ThreatHunterAgent(BaseAgent):
                     priority=2
                 )
                 
-                # Update active threats
                 self.active_threats.append(threat)
             
         except Exception as e:
@@ -426,11 +394,9 @@ class ThreatHunterAgent(BaseAgent):
     async def analyze_threat_patterns(self):
         """Analyze threat patterns"""
         try:
-            # Analyze patterns in active threats
             patterns = await self.identify_threat_patterns()
             
             if patterns:
-                # Share patterns with other agents
                 await self.send_message(
                     "pattern_recognizer_001",
                     MessageType.ANALYSIS_REQUEST,
@@ -443,12 +409,10 @@ class ThreatHunterAgent(BaseAgent):
     async def update_threat_database(self):
         """Update threat database"""
         try:
-            # Update database with new threat information
             for threat in self.active_threats:
                 threat_id = threat.get('id', str(uuid.uuid4()))
                 self.threat_database[threat_id] = threat
             
-            # Clean old threats
             current_time = datetime.now()
             self.active_threats = [
                 threat for threat in self.active_threats
@@ -462,7 +426,6 @@ class ThreatHunterAgent(BaseAgent):
         """Handle data requests"""
         try:
             if message.content.get('request_type') == 'threat_database':
-                # Provide threat database
                 await self.send_message(
                     message.sender_id,
                     MessageType.DATA_RESPONSE,
@@ -479,7 +442,6 @@ class ThreatHunterAgent(BaseAgent):
             analysis_type = message.content.get('analysis_type')
             
             if analysis_type == 'threat_assessment':
-                # Perform threat assessment
                 assessment = await self.perform_threat_assessment(message.content)
                 
                 await self.send_message(
@@ -492,7 +454,6 @@ class ThreatHunterAgent(BaseAgent):
         except Exception as e:
             logging.error(f"Analysis request handling error: {e}")
     
-    # Placeholder methods
     async def detect_threats(self) -> List[Dict[str, Any]]:
         return [{"id": str(uuid.uuid4()), "type": "suspicious_activity", "severity": "medium"}]
     
@@ -520,13 +481,10 @@ class NetworkAnalystAgent(BaseAgent):
         """Run network analyst tasks"""
         while self.is_running:
             try:
-                # Analyze network connections
                 await self.analyze_network_connections()
                 
-                # Map influence networks
                 await self.map_influence_networks()
                 
-                # Detect network anomalies
                 await self.detect_network_anomalies()
                 
                 await asyncio.sleep(15)
@@ -538,17 +496,14 @@ class NetworkAnalystAgent(BaseAgent):
     async def analyze_network_connections(self):
         """Analyze network connections"""
         try:
-            # Request network data
             await self.send_message(
                 "data_collector_001",
                 MessageType.DATA_REQUEST,
                 {"request_type": "network_connections", "scope": "all"}
             )
             
-            # Analyze connections
             analysis = await self.perform_connection_analysis()
             
-            # Share with intelligence analyst
             await self.send_message(
                 "intelligence_analyst_001",
                 MessageType.ANALYSIS_RESPONSE,
@@ -561,13 +516,10 @@ class NetworkAnalystAgent(BaseAgent):
     async def map_influence_networks(self):
         """Map influence networks"""
         try:
-            # Map influence patterns
             influence_map = await self.create_influence_map()
             
-            # Identify key influencers
             key_influencers = await self.identify_key_influencers(influence_map)
             
-            # Share with risk assessor
             await self.send_message(
                 "risk_assessor_001",
                 MessageType.ANALYSIS_REQUEST,
@@ -580,11 +532,9 @@ class NetworkAnalystAgent(BaseAgent):
     async def detect_network_anomalies(self):
         """Detect network anomalies"""
         try:
-            # Detect anomalies
             anomalies = await self.find_network_anomalies()
             
             if anomalies:
-                # Alert threat hunter
                 await self.send_message(
                     "threat_hunter_001",
                     MessageType.THREAT_ALERT,
@@ -599,7 +549,6 @@ class NetworkAnalystAgent(BaseAgent):
         """Handle data requests"""
         try:
             if message.content.get('request_type') == 'network_analysis':
-                # Provide network analysis
                 await self.send_message(
                     message.sender_id,
                     MessageType.DATA_RESPONSE,
@@ -616,7 +565,6 @@ class NetworkAnalystAgent(BaseAgent):
             analysis_type = message.content.get('analysis_type')
             
             if analysis_type == 'network_mapping':
-                # Perform network mapping
                 mapping = await self.perform_network_mapping(message.content)
                 
                 await self.send_message(
@@ -629,7 +577,6 @@ class NetworkAnalystAgent(BaseAgent):
         except Exception as e:
             logging.error(f"Analysis request handling error: {e}")
     
-    # Placeholder methods
     async def perform_connection_analysis(self) -> Dict[str, Any]:
         return {"connections": 100, "clusters": 5}
     
@@ -665,16 +612,12 @@ class CoordinatorAgent(BaseAgent):
         """Run coordinator tasks"""
         while self.is_running:
             try:
-                # Monitor agent status
                 await self.monitor_agent_status()
                 
-                # Distribute tasks
                 await self.distribute_tasks()
                 
-                # Optimize system performance
                 await self.optimize_system_performance()
                 
-                # Handle coordination requests
                 await self.handle_coordination_requests()
                 
                 await asyncio.sleep(5)
@@ -686,9 +629,7 @@ class CoordinatorAgent(BaseAgent):
     async def monitor_agent_status(self):
         """Monitor status of all agents"""
         try:
-            # Check agent health
             for agent_id, agent_info in self.agent_registry.items():
-                # Send status check
                 await self.send_message(
                     agent_id,
                     MessageType.STATUS_UPDATE,
@@ -704,11 +645,9 @@ class CoordinatorAgent(BaseAgent):
             while self.task_queue:
                 task = self.task_queue.pop(0)
                 
-                # Find best agent for task
                 best_agent = await self.find_best_agent_for_task(task)
                 
                 if best_agent:
-                    # Assign task
                     await self.send_message(
                         best_agent,
                         MessageType.TASK_ASSIGNMENT,
@@ -721,13 +660,10 @@ class CoordinatorAgent(BaseAgent):
     async def optimize_system_performance(self):
         """Optimize overall system performance"""
         try:
-            # Analyze system metrics
             performance_analysis = await self.analyze_system_performance()
             
-            # Make optimization decisions
             optimizations = await self.determine_optimizations(performance_analysis)
             
-            # Apply optimizations
             for optimization in optimizations:
                 await self.apply_optimization(optimization)
             
@@ -737,8 +673,6 @@ class CoordinatorAgent(BaseAgent):
     async def handle_coordination_requests(self):
         """Handle coordination requests from agents"""
         try:
-            # Process coordination messages
-            # This would handle requests for coordination between agents
             
         except Exception as e:
             logging.error(f"Coordination handling error: {e}")
@@ -747,7 +681,6 @@ class CoordinatorAgent(BaseAgent):
         """Handle data requests"""
         try:
             if message.content.get('request_type') == 'system_status':
-                # Provide system status
                 status = {
                     'agents': list(self.agent_registry.keys()),
                     'tasks_pending': len(self.task_queue),
@@ -770,7 +703,6 @@ class CoordinatorAgent(BaseAgent):
             analysis_type = message.content.get('analysis_type')
             
             if analysis_type == 'system_analysis':
-                # Perform system analysis
                 analysis = await self.perform_system_analysis()
                 
                 await self.send_message(
@@ -783,7 +715,6 @@ class CoordinatorAgent(BaseAgent):
         except Exception as e:
             logging.error(f"Analysis request handling error: {e}")
     
-    # Placeholder methods
     async def find_best_agent_for_task(self, task: Dict[str, Any]) -> Optional[str]:
         return "intelligence_analyst_001"
     
@@ -813,7 +744,6 @@ class AIAgentsSystem:
     def initialize_agents(self):
         """Initialize all agents"""
         try:
-            # Create agents
             self.agents['intelligence_analyst'] = IntelligenceAnalystAgent()
             self.agents['threat_hunter'] = ThreatHunterAgent()
             self.agents['network_analyst'] = NetworkAnalystAgent()
@@ -830,7 +760,6 @@ class AIAgentsSystem:
         try:
             self.is_running = True
             
-            # Start all agents
             for agent in self.agents.values():
                 await agent.start()
             
@@ -845,7 +774,6 @@ class AIAgentsSystem:
         try:
             self.is_running = False
             
-            # Stop all agents
             for agent in self.agents.values():
                 await agent.stop()
             
@@ -859,7 +787,6 @@ class AIAgentsSystem:
         """Send message to specific agent"""
         try:
             if target_agent in self.agents:
-                # This would send a message to the specific agent
                 pass
             
         except Exception as e:
@@ -881,7 +808,6 @@ class AIAgentsSystem:
             logging.error(f"Failed to get system status: {e}")
             return {}
 
-# Example usage
 async def main():
     """Example usage of AI Agents System"""
     config = {
@@ -900,7 +826,6 @@ async def main():
     try:
         await system.start_system()
         
-        # Keep running
         while True:
             await asyncio.sleep(1)
             

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Intelligent AI Conversation System - Continuous deep AI conversations across multiple tabs
 """
@@ -80,11 +79,9 @@ class IntelligentAIConversationSystem:
         self.ai_insights = {}
         self.is_running = False
         
-        # Database
         self.db_connection = None
         self.redis_client = None
         
-        # Initialize components
         self.initialize_database()
         self.initialize_question_templates()
         self.initialize_ai_providers()
@@ -95,10 +92,8 @@ class IntelligentAIConversationSystem:
             self.db_connection = sqlite3.connect('ai_conversations.db', check_same_thread=False)
             self.redis_client = redis.Redis(host='localhost', port=6379, db=1)
             
-            # Create tables
             cursor = self.db_connection.cursor()
             
-            # Conversations table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS conversations (
                     id TEXT PRIMARY KEY,
@@ -114,7 +109,6 @@ class IntelligentAIConversationSystem:
                 )
             ''')
             
-            # AI insights table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS ai_insights (
                     id TEXT PRIMARY KEY,
@@ -127,7 +121,6 @@ class IntelligentAIConversationSystem:
                 )
             ''')
             
-            # Question patterns table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS question_patterns (
                     id TEXT PRIMARY KEY,
@@ -302,17 +295,14 @@ class IntelligentAIConversationSystem:
         try:
             self.is_running = True
             
-            # Start background tasks
             asyncio.create_task(self.manage_conversation_sessions())
             asyncio.create_task(self.process_conversation_queue())
             asyncio.create_task(self.analyze_responses())
             asyncio.create_task(self.generate_insights())
             asyncio.create_task(self.cleanup_old_conversations())
             
-            # Initialize AI providers
             await self.initialize_all_providers()
             
-            # Start continuous conversations
             await self.start_continuous_conversations()
             
             logging.info("Intelligent AI conversation system started")
@@ -335,7 +325,6 @@ class IntelligentAIConversationSystem:
         try:
             config = self.ai_providers[provider]
             
-            # Create undetected Chrome driver
             options = uc.ChromeOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
@@ -343,7 +332,6 @@ class IntelligentAIConversationSystem:
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option('useAutomationExtension', False)
             
-            # Random user agent
             user_agents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -356,7 +344,6 @@ class IntelligentAIConversationSystem:
             
             config['driver'] = driver
             
-            # Create multiple tabs
             for i in range(config['max_tabs']):
                 await self.create_provider_tab(provider, i)
             
@@ -371,18 +358,14 @@ class IntelligentAIConversationSystem:
             config = self.ai_providers[provider]
             driver = config['driver']
             
-            # Open new tab
             driver.execute_script("window.open('');")
             driver.switch_to.window(driver.window_handles[-1])
             
-            # Navigate to provider URL
             driver.get(config['url'])
             await asyncio.sleep(random.uniform(3, 6))
             
-            # Handle login if needed
             await self.handle_provider_login(provider, tab_index)
             
-            # Create session
             session_id = f"{provider.value}_{tab_index}_{uuid.uuid4().hex[:8]}"
             tab_id = f"{provider.value}_tab_{tab_index}"
             
@@ -410,10 +393,8 @@ class IntelligentAIConversationSystem:
             config = self.ai_providers[provider]
             driver = config['driver']
             
-            # Wait for page to load
             await asyncio.sleep(random.uniform(2, 4))
             
-            # Handle different providers
             if provider == AIProvider.CHATGPT:
                 await self.handle_chatgpt_login(driver)
             elif provider == AIProvider.CLAUDE:
@@ -429,11 +410,9 @@ class IntelligentAIConversationSystem:
     async def handle_chatgpt_login(self, driver):
         """Handle ChatGPT login"""
         try:
-            # Check if already logged in
             if "chat" in driver.current_url.lower():
                 return
             
-            # Look for login button
             try:
                 login_button = WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Log in')]"))
@@ -441,7 +420,6 @@ class IntelligentAIConversationSystem:
                 login_button.click()
                 await asyncio.sleep(random.uniform(2, 4))
                 
-                # Handle login process
                 await self.complete_chatgpt_login(driver)
                 
             except TimeoutException:
@@ -453,8 +431,6 @@ class IntelligentAIConversationSystem:
     async def complete_chatgpt_login(self, driver):
         """Complete ChatGPT login process"""
         try:
-            # This would handle the actual login process
-            # For now, just wait
             await asyncio.sleep(random.uniform(5, 10))
             
         except Exception as e:
@@ -463,7 +439,6 @@ class IntelligentAIConversationSystem:
     async def handle_claude_login(self, driver):
         """Handle Claude login"""
         try:
-            # Similar to ChatGPT but for Claude
             await asyncio.sleep(random.uniform(3, 6))
             
         except Exception as e:
@@ -472,7 +447,6 @@ class IntelligentAIConversationSystem:
     async def handle_gemini_login(self, driver):
         """Handle Gemini login"""
         try:
-            # Similar to ChatGPT but for Gemini
             await asyncio.sleep(random.uniform(3, 6))
             
         except Exception as e:
@@ -481,7 +455,6 @@ class IntelligentAIConversationSystem:
     async def handle_perplexity_login(self, driver):
         """Handle Perplexity login"""
         try:
-            # Similar to ChatGPT but for Perplexity
             await asyncio.sleep(random.uniform(3, 6))
             
         except Exception as e:
@@ -491,13 +464,11 @@ class IntelligentAIConversationSystem:
         """Start continuous conversations across all tabs"""
         try:
             while self.is_running:
-                # Generate questions for all active sessions
                 for session_id, session in self.active_sessions.items():
                     if session.is_active:
                         await self.generate_and_ask_question(session)
                 
-                # Wait before next round
-                await asyncio.sleep(random.uniform(30, 120))  # 30 seconds to 2 minutes
+                await asyncio.sleep(random.uniform(30, 120))
                 
         except Exception as e:
             logging.error(f"Continuous conversation error: {e}")
@@ -505,16 +476,12 @@ class IntelligentAIConversationSystem:
     async def generate_and_ask_question(self, session: ConversationSession):
         """Generate and ask a question in a session"""
         try:
-            # Generate intelligent question
             question = await self.generate_intelligent_question(session)
             
-            # Ask question
             response = await self.ask_question(session, question)
             
-            # Store conversation
             await self.store_conversation(session, question, response)
             
-            # Update session
             session.messages.append({
                 'question': question,
                 'response': response,
@@ -528,22 +495,17 @@ class IntelligentAIConversationSystem:
     async def generate_intelligent_question(self, session: ConversationSession) -> str:
         """Generate intelligent question based on context"""
         try:
-            # Get conversation type templates
             templates = self.question_templates.get(session.conversation_type, [])
             
             if not templates:
                 return "What insights can you provide about intelligence analysis?"
             
-            # Select random template
             template = random.choice(templates)
             
-            # Generate context data
             context_data = await self.generate_context_data(session)
             
-            # Format question
             question = template.format(data=context_data)
             
-            # Add follow-up context
             if session.messages:
                 last_response = session.messages[-1].get('response', '')
                 if last_response:
@@ -558,7 +520,6 @@ class IntelligentAIConversationSystem:
     async def generate_context_data(self, session: ConversationSession) -> str:
         """Generate context data for questions"""
         try:
-            # Generate realistic intelligence data
             context_types = [
                 "User profile: 25-year-old software developer, active on social media, interested in cryptocurrency, recent activity shows increased messaging frequency",
                 "Network analysis: 150 connections, 3 high-influence nodes, 2 suspicious clusters, communication patterns suggest organized activity",
@@ -580,19 +541,17 @@ class IntelligentAIConversationSystem:
             config = self.ai_providers[session.provider]
             driver = config['driver']
             
-            # Switch to correct tab
             tab_handles = driver.window_handles
             if len(tab_handles) > 0:
-                driver.switch_to.window(tab_handles[0])  # Switch to first tab for now
+                driver.switch_to.window(tab_handles[0])
             
-            # Find input field
             input_selectors = [
                 "textarea[placeholder*='Message']",
                 "textarea[placeholder*='Ask']",
                 "input[type='text']",
                 "textarea",
                 ".input-field",
-                "#prompt-textarea"
+                "
             ]
             
             input_element = None
@@ -608,13 +567,10 @@ class IntelligentAIConversationSystem:
             if not input_element:
                 return "Error: Could not find input field"
             
-            # Type question with human-like behavior
             await self.type_question_humanlike(input_element, question)
             
-            # Send question
             await self.send_question(driver, input_element)
             
-            # Wait for response
             response = await self.wait_for_response(driver)
             
             return response
@@ -626,16 +582,13 @@ class IntelligentAIConversationSystem:
     async def type_question_humanlike(self, element, question: str):
         """Type question with human-like behavior"""
         try:
-            # Clear existing text
             element.clear()
             await asyncio.sleep(random.uniform(0.5, 1.5))
             
-            # Type with random delays
             for char in question:
                 element.send_keys(char)
                 await asyncio.sleep(random.uniform(0.05, 0.2))
             
-            # Random pause before sending
             await asyncio.sleep(random.uniform(1, 3))
             
         except Exception as e:
@@ -644,7 +597,6 @@ class IntelligentAIConversationSystem:
     async def send_question(self, driver, input_element):
         """Send question to AI"""
         try:
-            # Try different send methods
             send_methods = [
                 lambda: input_element.send_keys(Keys.RETURN),
                 lambda: driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click(),
@@ -665,7 +617,6 @@ class IntelligentAIConversationSystem:
     async def wait_for_response(self, driver) -> str:
         """Wait for AI response"""
         try:
-            # Wait for response to appear
             response_selectors = [
                 ".message-content",
                 ".response",
@@ -687,10 +638,8 @@ class IntelligentAIConversationSystem:
             if not response_element:
                 return "Error: No response received"
             
-            # Wait for response to complete
             await asyncio.sleep(random.uniform(2, 5))
             
-            # Extract response text
             response_text = response_element.text
             
             return response_text if response_text else "Empty response received"
@@ -723,11 +672,10 @@ class IntelligentAIConversationSystem:
             
             self.db_connection.commit()
             
-            # Cache in Redis
             cache_key = f"conversation:{session.session_id}:{len(session.messages)}"
             self.redis_client.setex(
                 cache_key,
-                3600,  # 1 hour TTL
+                3600,
                 json.dumps({
                     'question': question,
                     'response': response,
@@ -754,10 +702,8 @@ class IntelligentAIConversationSystem:
     async def process_conversation(self, conversation: Dict[str, Any]):
         """Process individual conversation"""
         try:
-            # Analyze conversation for insights
             insights = await self.extract_insights(conversation)
             
-            # Store insights
             if insights:
                 await self.store_insights(insights)
             
@@ -772,7 +718,6 @@ class IntelligentAIConversationSystem:
             response = conversation.get('response', '')
             question = conversation.get('question', '')
             
-            # Extract different types of insights
             insight_types = [
                 'strategic_insight',
                 'tactical_insight',
@@ -855,7 +800,6 @@ class IntelligentAIConversationSystem:
         """Analyze AI responses for patterns"""
         try:
             while self.is_running:
-                # Get recent conversations
                 cursor = self.db_connection.cursor()
                 cursor.execute('''
                     SELECT * FROM conversations 
@@ -865,12 +809,11 @@ class IntelligentAIConversationSystem:
                 
                 recent_conversations = cursor.fetchall()
                 
-                # Analyze patterns
                 if recent_conversations:
                     patterns = await self.identify_response_patterns(recent_conversations)
                     await self.update_question_patterns(patterns)
                 
-                await asyncio.sleep(300)  # Analyze every 5 minutes
+                await asyncio.sleep(300)
                 
         except Exception as e:
             logging.error(f"Response analysis error: {e}")
@@ -886,16 +829,13 @@ class IntelligentAIConversationSystem:
             }
             
             for conversation in conversations:
-                response = conversation[5]  # response column
+                response = conversation[5]
                 
-                # Analyze response length
                 patterns['response_length'].append(len(response))
                 
-                # Analyze response quality (simple heuristic)
                 quality_score = self.calculate_response_quality(response)
                 patterns['response_quality'].append(quality_score)
                 
-                # Extract themes
                 themes = self.extract_themes(response)
                 patterns['common_themes'].extend(themes)
             
@@ -908,8 +848,7 @@ class IntelligentAIConversationSystem:
     def calculate_response_quality(self, response: str) -> float:
         """Calculate response quality score"""
         try:
-            # Simple quality metrics
-            length_score = min(len(response) / 500, 1.0)  # Prefer longer responses
+            length_score = min(len(response) / 500, 1.0)
             structure_score = 1.0 if any(char in response for char in ['•', '-', '1.', '2.']) else 0.5
             detail_score = 1.0 if len(response.split()) > 50 else 0.5
             
@@ -948,7 +887,6 @@ class IntelligentAIConversationSystem:
         try:
             cursor = self.db_connection.cursor()
             
-            # Update pattern performance
             for pattern_id, performance in patterns.items():
                 cursor.execute('''
                     UPDATE question_patterns 
@@ -970,7 +908,6 @@ class IntelligentAIConversationSystem:
         """Generate insights from all conversations"""
         try:
             while self.is_running:
-                # Get all insights
                 cursor = self.db_connection.cursor()
                 cursor.execute('''
                     SELECT * FROM ai_insights 
@@ -980,12 +917,11 @@ class IntelligentAIConversationSystem:
                 
                 insights = cursor.fetchall()
                 
-                # Generate summary insights
                 if insights:
                     summary_insights = await self.generate_summary_insights(insights)
                     await self.store_summary_insights(summary_insights)
                 
-                await asyncio.sleep(3600)  # Generate insights every hour
+                await asyncio.sleep(3600)
                 
         except Exception as e:
             logging.error(f"Insight generation error: {e}")
@@ -1004,17 +940,14 @@ class IntelligentAIConversationSystem:
             total_confidence = 0
             
             for insight in insights:
-                insight_type = insight[1]  # insight_type column
-                confidence = insight[3]  # confidence column
-                content = insight[2]  # content column
+                insight_type = insight[1]
+                confidence = insight[3]
+                content = insight[2]
                 
-                # Count insight types
                 summary['insight_types'][insight_type] = summary['insight_types'].get(insight_type, 0) + 1
                 
-                # Sum confidence
                 total_confidence += confidence
                 
-                # Collect high-confidence insights
                 if confidence > 0.9:
                     summary['key_insights'].append({
                         'type': insight_type,
@@ -1022,7 +955,6 @@ class IntelligentAIConversationSystem:
                         'confidence': confidence
                     })
             
-            # Calculate average confidence
             if insights:
                 summary['average_confidence'] = total_confidence / len(insights)
             
@@ -1035,10 +967,9 @@ class IntelligentAIConversationSystem:
     async def store_summary_insights(self, summary: Dict[str, Any]):
         """Store summary insights"""
         try:
-            # Store in Redis for quick access
             self.redis_client.setex(
                 'summary_insights',
-                3600,  # 1 hour TTL
+                3600,
                 json.dumps(summary)
             )
             
@@ -1049,7 +980,6 @@ class IntelligentAIConversationSystem:
         """Cleanup old conversations"""
         try:
             while self.is_running:
-                # Cleanup conversations older than 7 days
                 cursor = self.db_connection.cursor()
                 cursor.execute('''
                     DELETE FROM conversations 
@@ -1062,7 +992,7 @@ class IntelligentAIConversationSystem:
                 if deleted_count > 0:
                     logging.info(f"Cleaned up {deleted_count} old conversations")
                 
-                await asyncio.sleep(86400)  # Cleanup once per day
+                await asyncio.sleep(86400)
                 
         except Exception as e:
             logging.error(f"Cleanup error: {e}")
@@ -1072,12 +1002,10 @@ class IntelligentAIConversationSystem:
         try:
             self.is_running = False
             
-            # Close all drivers
             for provider, config in self.ai_providers.items():
                 if config['driver']:
                     config['driver'].quit()
             
-            # Close database connection
             if self.db_connection:
                 self.db_connection.close()
             
@@ -1086,7 +1014,6 @@ class IntelligentAIConversationSystem:
         except Exception as e:
             logging.error(f"Stop system error: {e}")
 
-# Example usage
 async def main():
     """Example usage of Intelligent AI Conversation System"""
     config = {
@@ -1105,7 +1032,6 @@ async def main():
     try:
         await conversation_system.start_conversation_system()
         
-        # Keep running
         while True:
             await asyncio.sleep(1)
             

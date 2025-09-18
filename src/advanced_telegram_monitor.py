@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Advanced Telegram Monitoring System with AI-Powered User Profiling
 Continuously monitors chats, profiles users, and adapts strategies
@@ -39,7 +38,6 @@ class AdvancedUserProfiler:
     async def profile_user_comprehensive(self, client, user_id, username=None):
         """Comprehensive user profiling including bio, profile pics, and activity"""
         try:
-            # Get full user information
             user_entity = await client.get_entity(user_id)
             full_user = await client(GetFullUserRequest(user_entity))
             
@@ -61,23 +59,18 @@ class AdvancedUserProfiler:
                 'profile_analyzed_at': datetime.now().isoformat()
             }
             
-            # Analyze username value and patterns
             username_analysis = self.analyze_username_value(profile_data['username'])
             profile_data['username_analysis'] = username_analysis
             
-            # Analyze bio for suspicious content
             bio_analysis = self.analyze_bio_content(profile_data['bio'])
             profile_data['bio_analysis'] = bio_analysis
             
-            # Get user's recent activity across chats
             activity_analysis = await self.analyze_user_activity(client, user_id)
             profile_data['activity_analysis'] = activity_analysis
             
-            # AI-powered personality and risk assessment
             ai_assessment = await self.ai_user_assessment(profile_data)
             profile_data['ai_assessment'] = ai_assessment
             
-            # Store comprehensive profile
             self.store_user_profile(profile_data)
             
             return profile_data
@@ -98,12 +91,11 @@ class AdvancedUserProfiler:
             'indicators': []
         }
         
-        # Check for valuable username patterns
         valuable_patterns = [
-            r'^[a-z]{1,3}$',  # Short usernames
-            r'^[a-z]+\d{1,3}$',  # Name + numbers
-            r'^[a-z]+[a-z]$',  # Double letters
-            r'^[a-z]{4,8}$',  # Medium length clean names
+            r'^[a-z]{1,3}$',
+            r'^[a-z]+\d{1,3}$',
+            r'^[a-z]+[a-z]$',
+            r'^[a-z]{4,8}$',
         ]
         
         for pattern in valuable_patterns:
@@ -111,7 +103,6 @@ class AdvancedUserProfiler:
                 analysis['value_score'] += 10
                 analysis['patterns'].append('valuable_format')
         
-        # Check for business/crypto indicators
         business_keywords = ['crypto', 'btc', 'eth', 'trading', 'invest', 'money', 'cash', 'bank']
         for keyword in business_keywords:
             if keyword in username.lower():
@@ -119,11 +110,10 @@ class AdvancedUserProfiler:
                 analysis['patterns'].append('business_related')
                 analysis['indicators'].append(f'contains_{keyword}')
         
-        # Check for suspicious patterns
         suspicious_patterns = [
-            r'\d{4,}',  # Many numbers
-            r'[a-z]{1}\d{3,}',  # Single letter + many numbers
-            r'^[a-z]+\d+[a-z]+$',  # Mixed pattern
+            r'\d{4,}',
+            r'[a-z]{1}\d{3,}',
+            r'^[a-z]+\d+[a-z]+$',
         ]
         
         for pattern in suspicious_patterns:
@@ -131,7 +121,6 @@ class AdvancedUserProfiler:
                 analysis['risk_level'] = 'medium'
                 analysis['patterns'].append('suspicious_format')
         
-        # Check for premium indicators
         if len(username) <= 3:
             analysis['value_score'] += 20
             analysis['patterns'].append('premium_short')
@@ -151,7 +140,6 @@ class AdvancedUserProfiler:
             'business_indicators': []
         }
         
-        # Look for contact information
         phone_pattern = r'\+?[\d\s\-\(\)]{10,}'
         email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
         telegram_pattern = r'@[a-zA-Z0-9_]+'
@@ -168,7 +156,6 @@ class AdvancedUserProfiler:
             analysis['contact_info'].append('telegram')
             analysis['suspicious_score'] += 2
         
-        # Look for business/crypto indicators
         business_keywords = [
             'crypto', 'bitcoin', 'btc', 'ethereum', 'eth', 'trading', 'invest',
             'money', 'cash', 'bank', 'loan', 'credit', 'debt', 'profit',
@@ -180,7 +167,6 @@ class AdvancedUserProfiler:
                 analysis['business_indicators'].append(keyword)
                 analysis['suspicious_score'] += 2
         
-        # Look for suspicious phrases
         suspicious_phrases = [
             'dm me', 'contact me', 'hit me up', 'let\'s talk', 'serious inquiries',
             'no time wasters', 'quick money', 'easy money', 'guaranteed',
@@ -192,7 +178,6 @@ class AdvancedUserProfiler:
                 analysis['indicators'].append(f'suspicious_phrase: {phrase}')
                 analysis['suspicious_score'] += 5
         
-        # Determine risk level
         if analysis['suspicious_score'] >= 15:
             analysis['risk_level'] = 'high'
         elif analysis['suspicious_score'] >= 8:
@@ -203,13 +188,11 @@ class AdvancedUserProfiler:
     async def analyze_user_activity(self, client, user_id):
         """Analyze user's activity patterns across different chats"""
         try:
-            # Get user's dialogs to see what groups they're in
             dialogs = await client.get_dialogs()
             user_groups = []
             
             for dialog in dialogs:
                 if hasattr(dialog.entity, 'participants_count'):
-                    # This is a group/channel
                     try:
                         participants = await client.get_participants(dialog.entity, limit=1000)
                         if any(p.id == user_id for p in participants):
@@ -221,7 +204,6 @@ class AdvancedUserProfiler:
                     except:
                         continue
             
-            # Analyze message patterns from recent history
             message_patterns = await self.get_user_message_patterns(client, user_id)
             
             return {
@@ -246,11 +228,10 @@ class AdvancedUserProfiler:
         }
         
         try:
-            # Get recent messages from user across different chats
             dialogs = await client.get_dialogs()
             all_messages = []
             
-            for dialog in dialogs[:10]:  # Check first 10 dialogs
+            for dialog in dialogs[:10]:
                 try:
                     messages = await client.get_messages(dialog.entity, limit=100, from_user=user_id)
                     all_messages.extend(messages)
@@ -260,12 +241,10 @@ class AdvancedUserProfiler:
             if all_messages:
                 patterns['total_messages'] = len(all_messages)
                 
-                # Analyze message content
                 message_texts = [msg.text for msg in all_messages if msg.text]
                 if message_texts:
                     patterns['avg_message_length'] = sum(len(text) for text in message_texts) / len(message_texts)
                     
-                    # Common words analysis
                     all_words = []
                     for text in message_texts:
                         words = re.findall(r'\b\w+\b', text.lower())
@@ -274,7 +253,6 @@ class AdvancedUserProfiler:
                     word_counts = Counter(all_words)
                     patterns['common_words'] = word_counts.most_common(10)
                     
-                    # Message timing
                     patterns['message_times'] = [msg.date.hour for msg in all_messages if msg.date]
             
             return patterns
@@ -385,7 +363,6 @@ class ContinuousChatMonitor:
         """Start continuous monitoring of all chats"""
         print("Starting continuous chat monitoring...")
         
-        # Get all current dialogs
         dialogs = await client.get_dialogs()
         
         for dialog in dialogs:
@@ -393,11 +370,10 @@ class ContinuousChatMonitor:
                 self.monitored_chats.add(dialog.entity.id)
                 print(f"Monitoring chat: {getattr(dialog.entity, 'title', 'Unknown')}")
         
-        # Start monitoring loop
         while self.monitoring_active:
             try:
                 await self.monitor_cycle(client)
-                await asyncio.sleep(300)  # 5 minute cycles
+                await asyncio.sleep(300)
             except Exception as e:
                 print(f"Monitoring cycle error: {e}")
                 await asyncio.sleep(60)
@@ -406,17 +382,14 @@ class ContinuousChatMonitor:
         """Single monitoring cycle"""
         print(f"Monitoring cycle at {datetime.now()}")
         
-        # Check for new messages in monitored chats
         for chat_id in list(self.monitored_chats):
             try:
                 await self.check_new_messages(client, chat_id)
             except Exception as e:
                 print(f"Error monitoring chat {chat_id}: {e}")
         
-        # Discover new groups
         await self.discover_new_groups(client)
         
-        # Profile new users
         await self.profile_new_users(client)
     
     async def check_new_messages(self, client, chat_id):
@@ -426,7 +399,7 @@ class ContinuousChatMonitor:
             messages = await client.get_messages(entity, limit=10)
             
             for message in messages:
-                if message.date > datetime.now() - timedelta(minutes=10):  # Last 10 minutes
+                if message.date > datetime.now() - timedelta(minutes=10):
                     await self.process_new_message(client, message, entity)
                     
         except Exception as e:
@@ -438,15 +411,12 @@ class ContinuousChatMonitor:
             user_id = message.sender_id
             username = getattr(message.sender, 'username', '') if message.sender else ''
             
-            # Store message
             self.store_message(message, chat_entity)
             
-            # Profile user if not already profiled recently
             if await self.should_profile_user(user_id):
                 print(f"Profiling new user: {username} ({user_id})")
                 await self.profiler.profile_user_comprehensive(client, user_id, username)
             
-            # Check for suspicious content
             await self.check_suspicious_content(message, chat_entity)
             
         except Exception as e:
@@ -466,7 +436,6 @@ class ContinuousChatMonitor:
     async def discover_new_groups(self, client):
         """Discover new groups based on keywords and user activity"""
         try:
-            # Get trending keywords from current messages
             trending_keywords = await self.get_trending_keywords()
             
             for keyword in trending_keywords:
@@ -491,7 +460,6 @@ class ContinuousChatMonitor:
             words = re.findall(r'\b\w+\b', message.lower())
             all_words.extend(words)
         
-        # Filter for relevant keywords
         relevant_keywords = []
         for word, count in Counter(all_words).most_common(20):
             if len(word) > 3 and count > 2:
@@ -502,8 +470,6 @@ class ContinuousChatMonitor:
     async def search_groups_by_keyword(self, client, keyword):
         """Search for groups containing a specific keyword"""
         try:
-            # This is a simplified search - in practice, you'd need to use
-            # Telegram's search functionality or known group lists
             search_terms = [
                 f"{keyword}chat",
                 f"{keyword}group",
@@ -514,7 +480,6 @@ class ContinuousChatMonitor:
             
             for term in search_terms:
                 try:
-                    # Try to resolve username
                     entity = await client(ResolveUsernameRequest(term))
                     if entity and entity.id not in self.monitored_chats:
                         print(f"Found new group: {term}")
@@ -534,7 +499,6 @@ class ContinuousChatMonitor:
     async def profile_new_users(self, client):
         """Profile new users found in monitored chats"""
         try:
-            # Get users who haven't been profiled recently
             cursor = self.db.cursor()
             cursor.execute('''
                 SELECT DISTINCT user_id, username FROM raw_chat_data 
@@ -551,7 +515,7 @@ class ContinuousChatMonitor:
             for user_id, username in new_users:
                 try:
                     await self.profiler.profile_user_comprehensive(client, user_id, username)
-                    await asyncio.sleep(2)  # Rate limiting
+                    await asyncio.sleep(2)
                 except Exception as e:
                     print(f"Error profiling user {user_id}: {e}")
                     
@@ -565,7 +529,6 @@ class ContinuousChatMonitor:
         
         suspicious_indicators = []
         
-        # Check for illegal activity indicators
         illegal_keywords = [
             'drugs', 'cocaine', 'heroin', 'weed', 'marijuana',
             'weapons', 'guns', 'ammo', 'explosives',
@@ -578,7 +541,6 @@ class ContinuousChatMonitor:
             if keyword.lower() in message.text.lower():
                 suspicious_indicators.append(f'illegal_keyword: {keyword}')
         
-        # Check for financial scam indicators
         scam_phrases = [
             'guaranteed profit', 'risk free', 'get rich quick',
             'investment opportunity', 'double your money',
@@ -656,16 +618,13 @@ class AdaptiveAILearning:
         
         self.interaction_history.append(learning_data)
         
-        # Update success/failure patterns
         if outcome['success']:
             self.update_success_patterns(context, response)
         else:
             self.update_failure_patterns(context, response)
         
-        # Store learning data
         self.store_learning_data(learning_data)
         
-        # Update AI prompts based on learning
         await self.update_ai_prompts()
     
     def update_success_patterns(self, context, response):
@@ -710,16 +669,12 @@ class AdaptiveAILearning:
     async def update_ai_prompts(self):
         """Update AI prompts based on learning"""
         try:
-            # Analyze success patterns
             success_analysis = self.analyze_success_patterns()
             
-            # Generate new prompts based on learning
             new_prompts = await self.generate_adaptive_prompts(success_analysis)
             
-            # Update stored prompts
             self.learning_prompts.update(new_prompts)
             
-            # Store updated prompts
             self.store_updated_prompts()
             
         except Exception as e:
@@ -734,7 +689,7 @@ class AdaptiveAILearning:
         }
         
         for context_key, patterns in self.success_patterns.items():
-            if len(patterns) >= 3:  # Only analyze patterns with enough data
+            if len(patterns) >= 3:
                 analysis['successful_contexts'][context_key] = {
                     'count': len(patterns),
                     'recent_success_rate': self.calculate_recent_success_rate(context_key)
@@ -749,14 +704,12 @@ class AdaptiveAILearning:
         success_count = 0
         total_count = 0
         
-        # Count recent successes
         if context_key in self.success_patterns:
             for pattern in self.success_patterns[context_key]:
                 if datetime.fromisoformat(pattern['timestamp']) > recent_cutoff:
                     success_count += 1
                     total_count += 1
         
-        # Count recent failures
         if context_key in self.failure_patterns:
             for pattern in self.failure_patterns[context_key]:
                 if datetime.fromisoformat(pattern['timestamp']) > recent_cutoff:
@@ -828,20 +781,18 @@ class AdaptiveAILearning:
         ''', (
             'adaptive',
             json.dumps(self.learning_prompts),
-            0.0,  # Will be calculated
+            0.0,
             0,
             datetime.now().isoformat(),
             datetime.now().isoformat()
         ))
         self.db.commit()
 
-# Enhanced database setup
 def setup_advanced_database():
     """Setup database with advanced tables"""
     conn = sqlite3.connect("advanced_telegram_monitor.db")
     cursor = conn.cursor()
     
-    # User profiles table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -868,7 +819,6 @@ def setup_advanced_database():
         )
     ''')
     
-    # Suspicious activities table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS suspicious_activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -883,7 +833,6 @@ def setup_advanced_database():
         )
     ''')
     
-    # AI learning data table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ai_learning_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -895,7 +844,6 @@ def setup_advanced_database():
         )
     ''')
     
-    # Adaptive prompts table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS adaptive_prompts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -908,7 +856,6 @@ def setup_advanced_database():
         )
     ''')
     
-    # Raw chat data table (enhanced)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS raw_chat_data (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -929,25 +876,17 @@ def setup_advanced_database():
     conn.commit()
     return conn
 
-# Main execution
 async def main():
     """Main execution function"""
     print("Starting Advanced Telegram Monitor...")
     
-    # Setup database
     db = setup_advanced_database()
     
-    # Initialize components
     profiler = AdvancedUserProfiler(db)
     monitor = ContinuousChatMonitor(db, profiler)
     ai_learning = AdaptiveAILearning(db)
     
-    # Initialize Telegram client (you'll need to configure this)
-    # client = TelegramClient('session', api_id, api_hash)
-    # await client.start()
     
-    # Start monitoring
-    # await monitor.start_continuous_monitoring(client)
     
     print("Advanced monitoring system initialized")
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Advanced Analytics Engine - Machine learning insights and predictive analytics
 """
@@ -88,11 +87,9 @@ class AdvancedAnalyticsEngine:
         self.analytics_cache = {}
         self.performance_metrics = {}
         
-        # Database connections
         self.db_connection = None
         self.redis_client = None
         
-        # Initialize components
         self.initialize_database()
         self.initialize_models()
         self.initialize_analytics()
@@ -100,17 +97,14 @@ class AdvancedAnalyticsEngine:
     def initialize_database(self):
         """Initialize database connections"""
         try:
-            # SQLite for analytics storage
             self.db_connection = sqlite3.connect('analytics.db', check_same_thread=False)
             
-            # Redis for caching
             self.redis_client = redis.Redis(
                 host=self.config.get('redis', {}).get('host', 'localhost'),
                 port=self.config.get('redis', {}).get('port', 6379),
                 db=self.config.get('redis', {}).get('db', 0)
             )
             
-            # Create analytics tables
             self.create_analytics_tables()
             
             logging.info("Database connections initialized")
@@ -124,7 +118,6 @@ class AdvancedAnalyticsEngine:
         try:
             cursor = self.db_connection.cursor()
             
-            # Analytics results table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS analytics_results (
                     id TEXT PRIMARY KEY,
@@ -139,7 +132,6 @@ class AdvancedAnalyticsEngine:
                 )
             ''')
             
-            # Model performance table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS model_performance (
                     id TEXT PRIMARY KEY,
@@ -155,7 +147,6 @@ class AdvancedAnalyticsEngine:
                 )
             ''')
             
-            # Feature importance table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS feature_importance (
                     id TEXT PRIMARY KEY,
@@ -176,7 +167,6 @@ class AdvancedAnalyticsEngine:
     def initialize_models(self):
         """Initialize machine learning models"""
         try:
-            # Classification models
             self.models['classification'] = {
                 'random_forest': RandomForestClassifier(n_estimators=100, random_state=42),
                 'gradient_boosting': GradientBoostingClassifier(n_estimators=100, random_state=42),
@@ -187,7 +177,6 @@ class AdvancedAnalyticsEngine:
                 'neural_network': MLPClassifier(hidden_layer_sizes=(100, 50), random_state=42)
             }
             
-            # Regression models
             self.models['regression'] = {
                 'linear_regression': LinearRegression(),
                 'random_forest': RandomForestRegressor(n_estimators=100, random_state=42),
@@ -198,33 +187,29 @@ class AdvancedAnalyticsEngine:
                 'neural_network': MLPRegressor(hidden_layer_sizes=(100, 50), random_state=42)
             }
             
-            # Clustering models
             self.models['clustering'] = {
                 'kmeans': KMeans(n_clusters=5, random_state=42),
                 'dbscan': DBSCAN(eps=0.5, min_samples=5),
                 'agglomerative': AgglomerativeClustering(n_clusters=5),
-                'gaussian_mixture': None  # Will be initialized when needed
+                'gaussian_mixture': None
             }
             
-            # Anomaly detection models
             self.models['anomaly_detection'] = {
                 'isolation_forest': IsolationForest(contamination=0.1, random_state=42),
-                'one_class_svm': None,  # Will be initialized when needed
-                'local_outlier_factor': None  # Will be initialized when needed
+                'one_class_svm': None,
+                'local_outlier_factor': None
             }
             
-            # Time series models
             self.models['time_series'] = {
-                'arima': None,  # Will be initialized when needed
-                'lstm': None,  # Will be initialized when needed
-                'prophet': None  # Will be initialized when needed
+                'arima': None,
+                'lstm': None,
+                'prophet': None
             }
             
-            # NLP models
             self.models['nlp'] = {
                 'tfidf': TfidfVectorizer(max_features=1000, stop_words='english'),
-                'sentiment_analyzer': None,  # Will be initialized when needed
-                'topic_modeler': None  # Will be initialized when needed
+                'sentiment_analyzer': None,
+                'topic_modeler': None
             }
             
             logging.info("Machine learning models initialized")
@@ -236,17 +221,15 @@ class AdvancedAnalyticsEngine:
     def initialize_analytics(self):
         """Initialize analytics components"""
         try:
-            # Initialize scalers
             self.scalers = {
                 'standard': StandardScaler(),
                 'minmax': MinMaxScaler(),
-                'robust': None  # Will be initialized when needed
+                'robust': None
             }
             
-            # Initialize encoders
             self.encoders = {
                 'label': LabelEncoder(),
-                'onehot': None  # Will be initialized when needed
+                'onehot': None
             }
             
             logging.info("Analytics components initialized")
@@ -258,32 +241,24 @@ class AdvancedAnalyticsEngine:
     async def analyze_user_behavior(self, user_data: Dict[str, Any]) -> AnalyticsResult:
         """Analyze user behavior with advanced analytics"""
         try:
-            # Prepare data
             features = self.prepare_behavior_features(user_data)
             
-            # Perform multiple analyses
             analyses = {}
             
-            # Behavioral clustering
             clustering_result = await self.perform_behavioral_clustering(features)
             analyses['clustering'] = clustering_result
             
-            # Anomaly detection
             anomaly_result = await self.detect_behavioral_anomalies(features)
             analyses['anomaly_detection'] = anomaly_result
             
-            # Predictive modeling
             prediction_result = await self.predict_behavior(features)
             analyses['prediction'] = prediction_result
             
-            # Network analysis
             network_result = await self.analyze_behavioral_network(user_data)
             analyses['network'] = network_result
             
-            # Generate insights
             insights = await self.generate_behavioral_insights(analyses)
             
-            # Create result
             result = AnalyticsResult(
                 result_id=str(uuid.uuid4()),
                 analytics_type=AnalyticsType.DESCRIPTIVE,
@@ -296,7 +271,6 @@ class AdvancedAnalyticsEngine:
                 metadata={'user_id': user_data.get('user_id'), 'analysis_type': 'behavioral'}
             )
             
-            # Store result
             await self.store_analytics_result(result)
             
             return result
@@ -308,14 +282,11 @@ class AdvancedAnalyticsEngine:
     async def perform_behavioral_clustering(self, features: np.ndarray) -> Dict[str, Any]:
         """Perform behavioral clustering analysis"""
         try:
-            # Scale features
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features)
             
-            # Perform clustering with multiple algorithms
             clustering_results = {}
             
-            # K-Means clustering
             kmeans = KMeans(n_clusters=5, random_state=42)
             kmeans_labels = kmeans.fit_predict(features_scaled)
             clustering_results['kmeans'] = {
@@ -325,7 +296,6 @@ class AdvancedAnalyticsEngine:
                 'silhouette_score': silhouette_score(features_scaled, kmeans_labels)
             }
             
-            # DBSCAN clustering
             dbscan = DBSCAN(eps=0.5, min_samples=5)
             dbscan_labels = dbscan.fit_predict(features_scaled)
             clustering_results['dbscan'] = {
@@ -334,7 +304,6 @@ class AdvancedAnalyticsEngine:
                 'n_noise': list(dbscan_labels).count(-1)
             }
             
-            # Agglomerative clustering
             agg_clustering = AgglomerativeClustering(n_clusters=5)
             agg_labels = agg_clustering.fit_predict(features_scaled)
             clustering_results['agglomerative'] = {
@@ -351,22 +320,18 @@ class AdvancedAnalyticsEngine:
     async def detect_behavioral_anomalies(self, features: np.ndarray) -> Dict[str, Any]:
         """Detect behavioral anomalies"""
         try:
-            # Scale features
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features)
             
-            # Isolation Forest
             isolation_forest = IsolationForest(contamination=0.1, random_state=42)
             isolation_labels = isolation_forest.fit_predict(features_scaled)
             isolation_scores = isolation_forest.decision_function(features_scaled)
             
-            # One-Class SVM
             from sklearn.svm import OneClassSVM
             one_class_svm = OneClassSVM(nu=0.1)
             svm_labels = one_class_svm.fit_predict(features_scaled)
             svm_scores = one_class_svm.decision_function(features_scaled)
             
-            # Local Outlier Factor
             from sklearn.neighbors import LocalOutlierFactor
             lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
             lof_labels = lof.fit_predict(features_scaled)
@@ -397,8 +362,6 @@ class AdvancedAnalyticsEngine:
     async def predict_behavior(self, features: np.ndarray) -> Dict[str, Any]:
         """Predict future behavior"""
         try:
-            # This would require historical data for training
-            # For now, return placeholder predictions
             
             predictions = {
                 'next_activity': 'message_sending',
@@ -417,15 +380,12 @@ class AdvancedAnalyticsEngine:
     async def analyze_behavioral_network(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze behavioral network"""
         try:
-            # Create network graph
             G = nx.Graph()
             
-            # Add nodes and edges based on user data
             if 'connections' in user_data:
                 for connection in user_data['connections']:
                     G.add_edge(user_data.get('user_id', 'unknown'), connection)
             
-            # Calculate network metrics
             network_metrics = {
                 'nodes': G.number_of_nodes(),
                 'edges': G.number_of_edges(),
@@ -454,14 +414,12 @@ class AdvancedAnalyticsEngine:
                 'accuracy': 0.85
             }
             
-            # Extract insights from clustering
             if 'clustering' in analyses:
                 clustering = analyses['clustering']
                 if 'kmeans' in clustering:
                     silhouette = clustering['kmeans'].get('silhouette_score', 0)
                     insights['key_findings'].append(f"Behavioral clustering quality: {silhouette:.3f}")
             
-            # Extract insights from anomaly detection
             if 'anomaly_detection' in analyses:
                 anomaly = analyses['anomaly_detection']
                 total_anomalies = 0
@@ -473,14 +431,12 @@ class AdvancedAnalyticsEngine:
                     insights['key_findings'].append(f"Detected {total_anomalies} behavioral anomalies")
                     insights['risk_assessment'] = 'medium' if total_anomalies < 5 else 'high'
             
-            # Extract insights from network analysis
             if 'network' in analyses:
                 network = analyses['network']
                 if 'centrality' in network:
                     max_centrality = max(network['centrality'].values()) if network['centrality'] else 0
                     insights['key_findings'].append(f"Network centrality: {max_centrality:.3f}")
             
-            # Generate recommendations
             if insights['risk_assessment'] == 'high':
                 insights['recommendations'].append('Monitor user closely for suspicious activities')
                 insights['recommendations'].append('Implement additional security measures')
@@ -498,28 +454,21 @@ class AdvancedAnalyticsEngine:
     async def analyze_threat_patterns(self, threat_data: List[Dict[str, Any]]) -> AnalyticsResult:
         """Analyze threat patterns with machine learning"""
         try:
-            # Prepare threat data
             features = self.prepare_threat_features(threat_data)
             
-            # Perform threat analysis
             analyses = {}
             
-            # Threat classification
             classification_result = await self.classify_threats(features)
             analyses['classification'] = classification_result
             
-            # Threat clustering
             clustering_result = await self.cluster_threats(features)
             analyses['clustering'] = clustering_result
             
-            # Threat prediction
             prediction_result = await self.predict_threats(features)
             analyses['prediction'] = prediction_result
             
-            # Generate insights
             insights = await self.generate_threat_insights(analyses)
             
-            # Create result
             result = AnalyticsResult(
                 result_id=str(uuid.uuid4()),
                 analytics_type=AnalyticsType.PRESCRIPTIVE,
@@ -532,7 +481,6 @@ class AdvancedAnalyticsEngine:
                 metadata={'threat_count': len(threat_data), 'analysis_type': 'threat_patterns'}
             )
             
-            # Store result
             await self.store_analytics_result(result)
             
             return result
@@ -544,8 +492,6 @@ class AdvancedAnalyticsEngine:
     async def classify_threats(self, features: np.ndarray) -> Dict[str, Any]:
         """Classify threats using machine learning"""
         try:
-            # This would require labeled threat data for training
-            # For now, return placeholder classification
             
             classification_result = {
                 'threat_types': ['malware', 'phishing', 'social_engineering'],
@@ -563,11 +509,9 @@ class AdvancedAnalyticsEngine:
     async def cluster_threats(self, features: np.ndarray) -> Dict[str, Any]:
         """Cluster threats to identify patterns"""
         try:
-            # Scale features
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features)
             
-            # K-Means clustering
             kmeans = KMeans(n_clusters=3, random_state=42)
             labels = kmeans.fit_predict(features_scaled)
             
@@ -585,8 +529,6 @@ class AdvancedAnalyticsEngine:
     async def predict_threats(self, features: np.ndarray) -> Dict[str, Any]:
         """Predict future threats"""
         try:
-            # This would require historical threat data for training
-            # For now, return placeholder predictions
             
             predictions = {
                 'predicted_threats': ['phishing', 'malware'],
@@ -613,19 +555,16 @@ class AdvancedAnalyticsEngine:
                 'accuracy': 0.88
             }
             
-            # Extract insights from classification
             if 'classification' in analyses:
                 classification = analyses['classification']
                 if 'threat_types' in classification:
                     insights['key_findings'].append(f"Identified {len(classification['threat_types'])} threat types")
             
-            # Extract insights from clustering
             if 'clustering' in analyses:
                 clustering = analyses['clustering']
                 if 'n_clusters' in clustering:
                     insights['key_findings'].append(f"Identified {clustering['n_clusters']} threat clusters")
             
-            # Generate recommendations
             insights['recommendations'].append('Implement threat detection monitoring')
             insights['recommendations'].append('Update security policies')
             insights['recommendations'].append('Train security team on new threat patterns')
@@ -639,28 +578,21 @@ class AdvancedAnalyticsEngine:
     async def perform_time_series_analysis(self, time_series_data: pd.DataFrame) -> AnalyticsResult:
         """Perform time series analysis"""
         try:
-            # Prepare time series data
             ts_data = self.prepare_time_series_data(time_series_data)
             
-            # Perform time series analysis
             analyses = {}
             
-            # Trend analysis
             trend_result = await self.analyze_trends(ts_data)
             analyses['trend'] = trend_result
             
-            # Seasonality analysis
             seasonality_result = await self.analyze_seasonality(ts_data)
             analyses['seasonality'] = seasonality_result
             
-            # Forecasting
             forecast_result = await self.forecast_time_series(ts_data)
             analyses['forecast'] = forecast_result
             
-            # Generate insights
             insights = await self.generate_time_series_insights(analyses)
             
-            # Create result
             result = AnalyticsResult(
                 result_id=str(uuid.uuid4()),
                 analytics_type=AnalyticsType.PREDICTIVE,
@@ -673,7 +605,6 @@ class AdvancedAnalyticsEngine:
                 metadata={'data_points': len(ts_data), 'analysis_type': 'time_series'}
             )
             
-            # Store result
             await self.store_analytics_result(result)
             
             return result
@@ -685,7 +616,6 @@ class AdvancedAnalyticsEngine:
     async def analyze_trends(self, ts_data: pd.Series) -> Dict[str, Any]:
         """Analyze trends in time series data"""
         try:
-            # Calculate trend using linear regression
             x = np.arange(len(ts_data))
             slope, intercept, r_value, p_value, std_err = stats.linregress(x, ts_data)
             
@@ -705,8 +635,6 @@ class AdvancedAnalyticsEngine:
     async def analyze_seasonality(self, ts_data: pd.Series) -> Dict[str, Any]:
         """Analyze seasonality in time series data"""
         try:
-            # Simple seasonality analysis
-            # This would be more sophisticated in a real implementation
             
             return {
                 'has_seasonality': False,
@@ -721,13 +649,10 @@ class AdvancedAnalyticsEngine:
     async def forecast_time_series(self, ts_data: pd.Series) -> Dict[str, Any]:
         """Forecast future values in time series"""
         try:
-            # Simple forecasting using moving average
-            # This would use more sophisticated models in a real implementation
             
             last_value = ts_data.iloc[-1]
             moving_avg = ts_data.rolling(window=5).mean().iloc[-1]
             
-            # Generate simple forecast
             forecast_values = [last_value + (moving_avg - last_value) * i for i in range(1, 11)]
             
             return {
@@ -751,20 +676,17 @@ class AdvancedAnalyticsEngine:
                 'accuracy': 0.82
             }
             
-            # Extract insights from trend analysis
             if 'trend' in analyses:
                 trend = analyses['trend']
                 if 'trend_direction' in trend:
                     insights['key_findings'].append(f"Trend direction: {trend['trend_direction']}")
                     insights['key_findings'].append(f"Trend strength: {trend.get('trend_strength', 0):.3f}")
             
-            # Extract insights from seasonality
             if 'seasonality' in analyses:
                 seasonality = analyses['seasonality']
                 if seasonality.get('has_seasonality'):
                     insights['key_findings'].append("Seasonal patterns detected")
             
-            # Generate recommendations
             insights['recommendations'].append('Monitor trend changes')
             insights['recommendations'].append('Update forecasting models regularly')
             
@@ -779,7 +701,6 @@ class AdvancedAnalyticsEngine:
         try:
             features = []
             
-            # Extract numerical features
             feature_mapping = {
                 'message_frequency': user_data.get('message_frequency', 0),
                 'avg_message_length': user_data.get('avg_message_length', 0),
@@ -800,14 +721,13 @@ class AdvancedAnalyticsEngine:
             
             features = list(feature_mapping.values())
             
-            # Convert to numpy array and reshape
             features_array = np.array(features).reshape(1, -1)
             
             return features_array
             
         except Exception as e:
             logging.error(f"Feature preparation error: {e}")
-            return np.array([[0] * 15])  # Return default features
+            return np.array([[0] * 15])
     
     def prepare_threat_features(self, threat_data: List[Dict[str, Any]]) -> np.ndarray:
         """Prepare features for threat analysis"""
@@ -833,17 +753,14 @@ class AdvancedAnalyticsEngine:
     def prepare_time_series_data(self, ts_data: pd.DataFrame) -> pd.Series:
         """Prepare time series data for analysis"""
         try:
-            # Assume the DataFrame has a datetime index and a value column
             if 'timestamp' in ts_data.columns:
                 ts_data['timestamp'] = pd.to_datetime(ts_data['timestamp'])
                 ts_data = ts_data.set_index('timestamp')
             
-            # Use the first numeric column as the time series
             numeric_columns = ts_data.select_dtypes(include=[np.number]).columns
             if len(numeric_columns) > 0:
                 return ts_data[numeric_columns[0]]
             else:
-                # Return a default time series
                 return pd.Series([1, 2, 3, 4, 5])
                 
         except Exception as e:
@@ -873,11 +790,10 @@ class AdvancedAnalyticsEngine:
             
             self.db_connection.commit()
             
-            # Cache result in Redis
             cache_key = f"analytics_result:{result.result_id}"
             self.redis_client.setex(
                 cache_key,
-                3600,  # 1 hour TTL
+                3600,
                 json.dumps(asdict(result))
             )
             
@@ -889,7 +805,6 @@ class AdvancedAnalyticsEngine:
     async def get_analytics_result(self, result_id: str) -> Optional[AnalyticsResult]:
         """Get analytics result by ID"""
         try:
-            # Try cache first
             cache_key = f"analytics_result:{result_id}"
             cached_result = self.redis_client.get(cache_key)
             
@@ -897,7 +812,6 @@ class AdvancedAnalyticsEngine:
                 result_data = json.loads(cached_result)
                 return AnalyticsResult(**result_data)
             
-            # Query database
             cursor = self.db_connection.cursor()
             cursor.execute('''
                 SELECT * FROM analytics_results WHERE id = ?
@@ -926,7 +840,6 @@ class AdvancedAnalyticsEngine:
     async def generate_analytics_dashboard(self) -> Dict[str, Any]:
         """Generate analytics dashboard data"""
         try:
-            # Get recent analytics results
             cursor = self.db_connection.cursor()
             cursor.execute('''
                 SELECT * FROM analytics_results 
@@ -936,7 +849,6 @@ class AdvancedAnalyticsEngine:
             
             results = cursor.fetchall()
             
-            # Generate dashboard data
             dashboard_data = {
                 'total_analyses': len(results),
                 'analytics_types': {},
@@ -946,24 +858,19 @@ class AdvancedAnalyticsEngine:
                 'recent_results': []
             }
             
-            # Process results
             total_accuracy = 0
             total_confidence = 0
             
             for result in results:
-                # Count analytics types
                 analytics_type = result[1]
                 dashboard_data['analytics_types'][analytics_type] = dashboard_data['analytics_types'].get(analytics_type, 0) + 1
                 
-                # Count model types
                 model_type = result[2]
                 dashboard_data['model_types'][model_type] = dashboard_data['model_types'].get(model_type, 0) + 1
                 
-                # Sum accuracy and confidence
                 total_accuracy += result[5]
                 total_confidence += result[6]
                 
-                # Add to recent results
                 dashboard_data['recent_results'].append({
                     'id': result[0],
                     'type': analytics_type,
@@ -973,7 +880,6 @@ class AdvancedAnalyticsEngine:
                     'timestamp': result[7]
                 })
             
-            # Calculate averages
             if len(results) > 0:
                 dashboard_data['average_accuracy'] = total_accuracy / len(results)
                 dashboard_data['average_confidence'] = total_confidence / len(results)
@@ -1003,7 +909,6 @@ class AdvancedAnalyticsEngine:
         except Exception as e:
             logging.error(f"Failed to cleanup old results: {e}")
 
-# Example usage
 async def main():
     """Example usage of Advanced Analytics Engine"""
     config = {
@@ -1016,7 +921,6 @@ async def main():
     
     analytics_engine = AdvancedAnalyticsEngine(config)
     
-    # Test behavior analysis
     user_data = {
         'user_id': '12345',
         'message_frequency': 50,
@@ -1029,7 +933,6 @@ async def main():
     behavior_result = await analytics_engine.analyze_user_behavior(user_data)
     print(f"Behavior analysis: {behavior_result.insights}")
     
-    # Test threat analysis
     threat_data = [
         {'severity_score': 0.8, 'confidence_score': 0.9, 'frequency': 5},
         {'severity_score': 0.6, 'confidence_score': 0.7, 'frequency': 3}
@@ -1038,7 +941,6 @@ async def main():
     threat_result = await analytics_engine.analyze_threat_patterns(threat_data)
     print(f"Threat analysis: {threat_result.insights}")
     
-    # Generate dashboard
     dashboard = await analytics_engine.generate_analytics_dashboard()
     print(f"Dashboard: {dashboard}")
 

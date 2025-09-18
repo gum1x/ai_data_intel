@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Advanced Analysis Dashboard for Comprehensive Telegram Monitoring
 Handles user profiling, suspicious activity detection, and AI learning analysis
@@ -28,21 +27,17 @@ class AdvancedAnalysisDashboard:
         
         summary = {}
         
-        # Basic counts
         tables = ['user_profiles', 'raw_chat_data', 'suspicious_activities', 'ai_learning_data']
         for table in tables:
             cursor.execute(f"SELECT COUNT(*) FROM {table}")
             summary[f"{table}_count"] = cursor.fetchone()[0]
         
-        # User profiling stats
         cursor.execute("SELECT COUNT(*) FROM user_profiles WHERE profile_analyzed_at > datetime('now', '-1 day')")
         summary['recently_profiled_users'] = cursor.fetchone()[0]
         
-        # Suspicious activity stats
         cursor.execute("SELECT COUNT(*) FROM suspicious_activities WHERE created_at > datetime('now', '-1 day')")
         summary['recent_suspicious_activities'] = cursor.fetchone()[0]
         
-        # AI learning stats
         cursor.execute("SELECT COUNT(*) FROM ai_learning_data WHERE created_at > datetime('now', '-1 day')")
         summary['recent_ai_learning_events'] = cursor.fetchone()[0]
         
@@ -52,7 +47,6 @@ class AdvancedAnalysisDashboard:
         """Comprehensive user profile analysis"""
         cursor = self.conn.cursor()
         
-        # Get all user profiles
         cursor.execute("""
             SELECT user_id, username, bio, username_analysis, bio_analysis, 
                    activity_analysis, ai_assessment, profile_analyzed_at
@@ -77,7 +71,6 @@ class AdvancedAnalysisDashboard:
             user_id, username, bio, username_analysis, bio_analysis, activity_analysis, ai_assessment, analyzed_at = profile
             
             try:
-                # Parse JSON data
                 username_data = json.loads(username_analysis) if username_analysis else {}
                 bio_data = json.loads(bio_analysis) if bio_analysis else {}
                 activity_data = json.loads(activity_analysis) if activity_analysis else {}
@@ -94,7 +87,6 @@ class AdvancedAnalysisDashboard:
                     'analyzed_at': analyzed_at
                 }
                 
-                # Categorize users
                 if username_data.get('value_score', 0) >= 20:
                     analysis['high_value_users'].append(user_info)
                 
@@ -107,14 +99,12 @@ class AdvancedAnalysisDashboard:
                             analysis['username_value_distribution'][pattern] = 0
                         analysis['username_value_distribution'][pattern] += 1
                 
-                # Bio analysis summary
                 if bio_data.get('business_indicators'):
                     for indicator in bio_data['business_indicators']:
                         if indicator not in analysis['bio_analysis_summary']:
                             analysis['bio_analysis_summary'][indicator] = 0
                         analysis['bio_analysis_summary'][indicator] += 1
                 
-                # Activity patterns
                 activity_level = activity_data.get('activity_level', 'unknown')
                 if activity_level not in analysis['activity_patterns']:
                     analysis['activity_patterns'][activity_level] = 0
@@ -153,19 +143,16 @@ class AdvancedAnalysisDashboard:
             try:
                 indicators_data = json.loads(indicators) if indicators else []
                 
-                # Count activity types
                 for indicator in indicators_data:
                     activity_type = indicator.split(':')[0] if ':' in indicator else indicator
                     if activity_type not in analysis['activity_types']:
                         analysis['activity_types'][activity_type] = 0
                     analysis['activity_types'][activity_type] += 1
                     
-                    # Count specific indicators
                     if indicator not in analysis['indicator_frequency']:
                         analysis['indicator_frequency'][indicator] = 0
                     analysis['indicator_frequency'][indicator] += 1
                 
-                # Track suspicious users
                 if username not in analysis['suspicious_users']:
                     analysis['suspicious_users'][username] = {
                         'user_id': user_id,
@@ -181,7 +168,6 @@ class AdvancedAnalysisDashboard:
                     'timestamp': timestamp
                 })
                 
-                # Chat analysis
                 if chat_title not in analysis['chat_analysis']:
                     analysis['chat_analysis'][chat_title] = 0
                 analysis['chat_analysis'][chat_title] += 1
@@ -226,11 +212,9 @@ class AdvancedAnalysisDashboard:
                 if outcome_data.get('success', False):
                     successful_interactions += 1
                 
-                # Analyze context effectiveness
                 context_key = self.extract_context_key(context_data)
                 context_success[context_key].append(outcome_data.get('success', False))
                 
-                # Learning trends by time
                 date = datetime.fromisoformat(timestamp).date()
                 if date not in analysis['learning_trends']:
                     analysis['learning_trends'][date] = {'success': 0, 'total': 0}
@@ -243,13 +227,11 @@ class AdvancedAnalysisDashboard:
                 print(f"Error analyzing learning data: {e}")
                 continue
         
-        # Calculate success rate
         if learning_data:
             analysis['success_rate'] = successful_interactions / len(learning_data)
         
-        # Calculate context effectiveness
         for context_key, successes in context_success.items():
-            if len(successes) >= 3:  # Only analyze contexts with enough data
+            if len(successes) >= 3:
                 success_rate = sum(successes) / len(successes)
                 analysis['context_effectiveness'][context_key] = {
                     'success_rate': success_rate,
@@ -276,7 +258,6 @@ class AdvancedAnalysisDashboard:
     def generate_ai_insights(self):
         """Generate AI-powered insights from all collected data"""
         try:
-            # Get comprehensive data
             user_analysis = self.analyze_user_profiles()
             suspicious_analysis = self.analyze_suspicious_activities()
             learning_analysis = self.analyze_ai_learning_progress()
@@ -336,28 +317,23 @@ class AdvancedAnalysisDashboard:
                 bio_data = json.loads(bio_analysis)
                 ai_data = json.loads(ai_assessment) if ai_assessment else {}
                 
-                # Calculate value score
                 value_score = 0
                 
-                # Username value
                 value_score += username_data.get('value_score', 0)
                 
-                # Bio indicators
                 if bio_data.get('business_indicators'):
                     value_score += len(bio_data['business_indicators']) * 5
                 
-                # AI assessment
                 if ai_data.get('value_assessment'):
                     if 'high' in ai_data['value_assessment'].lower():
                         value_score += 20
                     elif 'medium' in ai_data['value_assessment'].lower():
                         value_score += 10
                 
-                # Contact information availability
                 if bio_data.get('contact_info'):
                     value_score += len(bio_data['contact_info']) * 3
                 
-                if value_score >= 25:  # Threshold for high value
+                if value_score >= 25:
                     high_value_targets.append({
                         'user_id': user_id,
                         'username': username,
@@ -372,7 +348,6 @@ class AdvancedAnalysisDashboard:
                 print(f"Error evaluating target {user_id}: {e}")
                 continue
         
-        # Sort by value score
         high_value_targets.sort(key=lambda x: x['value_score'], reverse=True)
         
         return high_value_targets
@@ -405,7 +380,6 @@ class AdvancedAnalysisDashboard:
             try:
                 indicators_data = json.loads(indicators) if indicators else []
                 
-                # User patterns
                 if username not in patterns['user_patterns']:
                     patterns['user_patterns'][username] = {
                         'user_id': user_id,
@@ -418,21 +392,17 @@ class AdvancedAnalysisDashboard:
                 patterns['user_patterns'][username]['illegal_indicators'].extend(indicators_data)
                 patterns['user_patterns'][username]['chats_involved'].add(chat_title)
                 
-                # Chat patterns
                 if chat_title not in patterns['chat_patterns']:
                     patterns['chat_patterns'][chat_title] = 0
                 patterns['chat_patterns'][chat_title] += 1
                 
-                # Message patterns
                 if message:
-                    # Extract keywords
                     keywords = re.findall(r'\b\w+\b', message.lower())
                     for keyword in keywords:
                         if keyword not in patterns['message_patterns']:
                             patterns['message_patterns'][keyword] = 0
                         patterns['message_patterns'][keyword] += 1
                 
-                # Timeline analysis
                 date = datetime.fromisoformat(timestamp).date()
                 if date not in patterns['timeline_analysis']:
                     patterns['timeline_analysis'][date] = 0
@@ -442,11 +412,9 @@ class AdvancedAnalysisDashboard:
                 print(f"Error analyzing illegal activity: {e}")
                 continue
         
-        # Convert sets to lists for JSON serialization
         for user_data in patterns['user_patterns'].values():
             user_data['chats_involved'] = list(user_data['chats_involved'])
         
-        # Risk assessment
         for username, user_data in patterns['user_patterns'].items():
             risk_score = 0
             risk_score += user_data['activity_count'] * 5
@@ -564,14 +532,12 @@ class AdvancedAnalysisDashboard:
             fig, axes = plt.subplots(3, 2, figsize=(16, 18))
             fig.suptitle('Advanced Telegram Analysis Dashboard', fontsize=16)
             
-            # 1. User value distribution
             user_analysis = self.analyze_user_profiles()
             username_patterns = user_analysis['username_value_distribution']
             if username_patterns:
                 axes[0, 0].pie(username_patterns.values(), labels=username_patterns.keys(), autopct='%1.1f%%')
                 axes[0, 0].set_title('Username Value Patterns')
             
-            # 2. Suspicious activities by type
             suspicious_analysis = self.analyze_suspicious_activities()
             activity_types = suspicious_analysis['activity_types']
             if activity_types:
@@ -579,7 +545,6 @@ class AdvancedAnalysisDashboard:
                 axes[0, 1].set_title('Suspicious Activities by Type')
                 axes[0, 1].tick_params(axis='x', rotation=45)
             
-            # 3. AI learning success rate over time
             learning_analysis = self.analyze_ai_learning_progress()
             trends = learning_analysis['learning_trends']
             if trends:
@@ -590,7 +555,6 @@ class AdvancedAnalysisDashboard:
                 axes[1, 0].set_ylabel('Success Rate')
                 axes[1, 0].tick_params(axis='x', rotation=45)
             
-            # 4. High-value targets
             targets = self.identify_high_value_targets()
             if targets:
                 usernames = [t['username'][:15] + '...' if len(t['username']) > 15 else t['username'] for t in targets[:10]]
@@ -601,7 +565,6 @@ class AdvancedAnalysisDashboard:
                 axes[1, 1].set_xticklabels(usernames, rotation=45, ha='right')
                 axes[1, 1].set_ylabel('Value Score')
             
-            # 5. Illegal activity timeline
             illegal_patterns = self.detect_illegal_activity_patterns()
             timeline = illegal_patterns['timeline_analysis']
             if timeline:
@@ -612,7 +575,6 @@ class AdvancedAnalysisDashboard:
                 axes[2, 0].set_ylabel('Activity Count')
                 axes[2, 0].tick_params(axis='x', rotation=45)
             
-            # 6. Risk assessment distribution
             risk_assessment = illegal_patterns['risk_assessment']
             if risk_assessment:
                 risk_levels = [data['risk_level'] for data in risk_assessment.values()]

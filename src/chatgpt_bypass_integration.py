@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 ChatGPT Bypass Integration - Advanced ChatGPT API bypass with intelligent prompting
 """
@@ -69,7 +68,6 @@ class ChatGPTBypassIntegration:
         self.rate_limits = {}
         self.is_running = False
         
-        # Initialize components
         self.initialize_proxies()
         self.initialize_user_agents()
         self.initialize_prompt_templates()
@@ -78,7 +76,6 @@ class ChatGPTBypassIntegration:
     def initialize_proxies(self):
         """Initialize proxy list for rotation"""
         try:
-            # Free proxy sources
             proxy_sources = [
                 'https://www.proxy-list.download/api/v1/get?type=http',
                 'https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all',
@@ -94,7 +91,6 @@ class ChatGPTBypassIntegration:
                 except Exception as e:
                     logging.warning(f"Failed to fetch proxies from {source}: {e}")
             
-            # Remove duplicates and validate
             self.proxy_list = list(set(self.proxy_list))
             logging.info(f"Loaded {len(self.proxy_list)} proxies")
             
@@ -164,7 +160,6 @@ class ChatGPTBypassIntegration:
     def initialize_selenium(self):
         """Initialize Selenium WebDriver"""
         try:
-            # Configure Chrome options
             options = uc.ChromeOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
@@ -172,16 +167,13 @@ class ChatGPTBypassIntegration:
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option('useAutomationExtension', False)
             
-            # Random user agent
             if self.user_agents:
                 options.add_argument(f'--user-agent={random.choice(self.user_agents)}')
             
-            # Random proxy
             if self.proxy_list:
                 proxy = random.choice(self.proxy_list)
                 options.add_argument(f'--proxy-server={proxy}')
             
-            # Create driver
             self.driver = uc.Chrome(options=options)
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             
@@ -195,10 +187,8 @@ class ChatGPTBypassIntegration:
         try:
             self.is_running = True
             
-            # Navigate to ChatGPT
             await self.navigate_to_chatgpt()
             
-            # Handle login if needed
             await self.handle_login()
             
             logging.info("ChatGPT bypass system started")
@@ -212,10 +202,8 @@ class ChatGPTBypassIntegration:
         try:
             self.driver.get("https://chat.openai.com")
             
-            # Wait for page to load
             await asyncio.sleep(random.uniform(2, 5))
             
-            # Check if we need to handle any popups
             await self.handle_popups()
             
             logging.info("Navigated to ChatGPT")
@@ -227,21 +215,17 @@ class ChatGPTBypassIntegration:
     async def handle_login(self):
         """Handle ChatGPT login"""
         try:
-            # Check if already logged in
             if self.is_logged_in():
                 logging.info("Already logged in to ChatGPT")
                 return
             
-            # Handle login process
             login_button = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Log in')]"))
             )
             login_button.click()
             
-            # Wait for login page
             await asyncio.sleep(random.uniform(2, 4))
             
-            # Handle different login methods
             if "email" in self.driver.page_source.lower():
                 await self.handle_email_login()
             elif "google" in self.driver.page_source.lower():
@@ -249,7 +233,6 @@ class ChatGPTBypassIntegration:
             elif "microsoft" in self.driver.page_source.lower():
                 await self.handle_microsoft_login()
             
-            # Wait for login to complete
             await asyncio.sleep(random.uniform(3, 6))
             
             logging.info("Login process completed")
@@ -261,25 +244,21 @@ class ChatGPTBypassIntegration:
     async def handle_email_login(self):
         """Handle email login"""
         try:
-            # Enter email
             email_input = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.NAME, "username"))
             )
             email_input.send_keys(self.config.get('email', ''))
             
-            # Click continue
             continue_button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Continue')]")
             continue_button.click()
             
             await asyncio.sleep(random.uniform(2, 4))
             
-            # Enter password
             password_input = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.NAME, "password"))
             )
             password_input.send_keys(self.config.get('password', ''))
             
-            # Click login
             login_button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Log in')]")
             login_button.click()
             
@@ -295,7 +274,6 @@ class ChatGPTBypassIntegration:
             )
             google_button.click()
             
-            # Handle Google OAuth
             await self.handle_oauth_flow()
             
         except Exception as e:
@@ -310,7 +288,6 @@ class ChatGPTBypassIntegration:
             )
             microsoft_button.click()
             
-            # Handle Microsoft OAuth
             await self.handle_oauth_flow()
             
         except Exception as e:
@@ -320,11 +297,8 @@ class ChatGPTBypassIntegration:
     async def handle_oauth_flow(self):
         """Handle OAuth flow"""
         try:
-            # Wait for OAuth page to load
             await asyncio.sleep(random.uniform(3, 6))
             
-            # Handle OAuth authentication
-            # This would need to be implemented based on specific OAuth provider
             
             logging.info("OAuth flow completed")
             
@@ -335,7 +309,6 @@ class ChatGPTBypassIntegration:
     async def handle_popups(self):
         """Handle various popups and modals"""
         try:
-            # Handle cookie consent
             try:
                 cookie_button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Accept') or contains(text(), 'OK')]")
                 cookie_button.click()
@@ -343,7 +316,6 @@ class ChatGPTBypassIntegration:
             except NoSuchElementException:
                 pass
             
-            # Handle other popups
             try:
                 close_button = self.driver.find_element(By.XPATH, "//button[@aria-label='Close']")
                 close_button.click()
@@ -357,7 +329,6 @@ class ChatGPTBypassIntegration:
     def is_logged_in(self) -> bool:
         """Check if user is logged in"""
         try:
-            # Look for elements that indicate logged in state
             logged_in_indicators = [
                 "//button[contains(text(), 'New chat')]",
                 "//div[contains(@class, 'chat')]",
@@ -380,22 +351,17 @@ class ChatGPTBypassIntegration:
     async def send_message(self, prompt: str, context: Dict[str, Any] = None) -> ChatGPTResponse:
         """Send message to ChatGPT"""
         try:
-            # Generate intelligent prompt
             intelligent_prompt = self.generate_intelligent_prompt(prompt, context)
             
-            # Find message input
             message_input = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//textarea[contains(@placeholder, 'Message')]"))
             )
             
-            # Type message with human-like behavior
             await self.type_message_humanlike(message_input, intelligent_prompt)
             
-            # Send message
             send_button = self.driver.find_element(By.XPATH, "//button[contains(@data-testid, 'send-button')]")
             send_button.click()
             
-            # Wait for response
             response = await self.wait_for_response()
             
             return response
@@ -407,15 +373,12 @@ class ChatGPTBypassIntegration:
     async def type_message_humanlike(self, element, text: str):
         """Type message with human-like behavior"""
         try:
-            # Clear existing text
             element.clear()
             
-            # Type with random delays
             for char in text:
                 element.send_keys(char)
                 await asyncio.sleep(random.uniform(0.05, 0.15))
             
-            # Random pause before sending
             await asyncio.sleep(random.uniform(0.5, 2.0))
             
         except Exception as e:
@@ -427,15 +390,12 @@ class ChatGPTBypassIntegration:
         try:
             start_time = time.time()
             
-            # Wait for response to appear
             response_element = WebDriverWait(self.driver, 60).until(
                 EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'markdown')]"))
             )
             
-            # Wait for response to complete
             await self.wait_for_response_complete()
             
-            # Extract response text
             response_text = response_element.text
             
             processing_time = time.time() - start_time
@@ -456,7 +416,6 @@ class ChatGPTBypassIntegration:
     async def wait_for_response_complete(self):
         """Wait for response to complete typing"""
         try:
-            # Wait for typing indicator to disappear
             while True:
                 try:
                     typing_indicator = self.driver.find_element(By.XPATH, "//div[contains(@class, 'typing')]")
@@ -467,7 +426,6 @@ class ChatGPTBypassIntegration:
                 
                 await asyncio.sleep(0.5)
             
-            # Additional wait for response to be complete
             await asyncio.sleep(random.uniform(1, 3))
             
         except Exception as e:
@@ -476,17 +434,13 @@ class ChatGPTBypassIntegration:
     def generate_intelligent_prompt(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """Generate intelligent prompt based on context"""
         try:
-            # Determine prompt type
             prompt_type = self.determine_prompt_type(prompt, context)
             
-            # Get template
             templates = self.prompt_templates.get(prompt_type, self.prompt_templates['intelligence_analysis'])
             template = random.choice(templates)
             
-            # Format template
             formatted_prompt = template.format(data=prompt)
             
-            # Add context if available
             if context:
                 context_str = json.dumps(context, indent=2)
                 formatted_prompt += f"\n\nAdditional Context:\n{context_str}"
@@ -502,7 +456,6 @@ class ChatGPTBypassIntegration:
         try:
             prompt_lower = prompt.lower()
             
-            # Check for keywords
             if any(keyword in prompt_lower for keyword in ['threat', 'danger', 'suspicious', 'illegal']):
                 return 'threat_detection'
             elif any(keyword in prompt_lower for keyword in ['behavior', 'personality', 'traits']):
@@ -523,16 +476,13 @@ class ChatGPTBypassIntegration:
     async def analyze_intelligence_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze intelligence data using ChatGPT"""
         try:
-            # Prepare data for analysis
             data_str = json.dumps(data, indent=2)
             
-            # Send to ChatGPT
             response = await self.send_message(
                 f"Analyze this intelligence data and provide insights: {data_str}",
                 context={'analysis_type': 'intelligence', 'priority': 'high'}
             )
             
-            # Parse response
             analysis = self.parse_analysis_response(response.response)
             
             return analysis
@@ -544,16 +494,13 @@ class ChatGPTBypassIntegration:
     async def generate_social_engineering_strategy(self, target_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate social engineering strategy using ChatGPT"""
         try:
-            # Prepare target data
             target_str = json.dumps(target_data, indent=2)
             
-            # Send to ChatGPT
             response = await self.send_message(
                 f"Based on this target profile, suggest social engineering approaches: {target_str}",
                 context={'analysis_type': 'social_engineering', 'priority': 'high'}
             )
             
-            # Parse response
             strategy = self.parse_strategy_response(response.response)
             
             return strategy
@@ -565,16 +512,13 @@ class ChatGPTBypassIntegration:
     async def generate_conversation_starters(self, user_profile: Dict[str, Any]) -> List[str]:
         """Generate conversation starters using ChatGPT"""
         try:
-            # Prepare profile data
             profile_str = json.dumps(user_profile, indent=2)
             
-            # Send to ChatGPT
             response = await self.send_message(
                 f"Generate 5 natural conversation starters for this person: {profile_str}",
                 context={'analysis_type': 'conversation_generation', 'priority': 'medium'}
             )
             
-            # Parse response
             starters = self.parse_conversation_starters(response.response)
             
             return starters
@@ -586,7 +530,6 @@ class ChatGPTBypassIntegration:
     def parse_analysis_response(self, response: str) -> Dict[str, Any]:
         """Parse analysis response from ChatGPT"""
         try:
-            # Try to extract structured data
             analysis = {
                 'summary': response,
                 'key_findings': [],
@@ -595,7 +538,6 @@ class ChatGPTBypassIntegration:
                 'confidence': 0.8
             }
             
-            # Look for structured sections
             if 'Key Findings:' in response:
                 findings_section = response.split('Key Findings:')[1].split('\n')[0]
                 analysis['key_findings'] = [f.strip() for f in findings_section.split('-') if f.strip()]
@@ -620,7 +562,6 @@ class ChatGPTBypassIntegration:
                 'success_probability': 0.7
             }
             
-            # Look for structured sections
             if 'Tactics:' in response:
                 tactics_section = response.split('Tactics:')[1].split('\n')[0]
                 strategy['tactics'] = [t.strip() for t in tactics_section.split('-') if t.strip()]
@@ -636,18 +577,16 @@ class ChatGPTBypassIntegration:
         try:
             starters = []
             
-            # Look for numbered or bulleted lists
             lines = response.split('\n')
             for line in lines:
                 line = line.strip()
                 if line and (line.startswith(('1.', '2.', '3.', '4.', '5.')) or line.startswith('-')):
-                    # Remove numbering/bullets
                     starter = re.sub(r'^\d+\.\s*', '', line)
                     starter = re.sub(r'^-\s*', '', starter)
                     if starter:
                         starters.append(starter)
             
-            return starters[:5]  # Return max 5 starters
+            return starters[:5]
             
         except Exception as e:
             logging.error(f"Failed to parse conversation starters: {e}")
@@ -659,10 +598,8 @@ class ChatGPTBypassIntegration:
             if not self.proxy_list:
                 return
             
-            # Get new proxy
             new_proxy = random.choice(self.proxy_list)
             
-            # Restart driver with new proxy
             await self.restart_driver_with_proxy(new_proxy)
             
             logging.info(f"Rotated to new proxy: {new_proxy}")
@@ -673,11 +610,9 @@ class ChatGPTBypassIntegration:
     async def restart_driver_with_proxy(self, proxy: str):
         """Restart driver with new proxy"""
         try:
-            # Close current driver
             if self.driver:
                 self.driver.quit()
             
-            # Create new driver with proxy
             options = uc.ChromeOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
@@ -692,7 +627,6 @@ class ChatGPTBypassIntegration:
             self.driver = uc.Chrome(options=options)
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             
-            # Navigate back to ChatGPT
             await self.navigate_to_chatgpt()
             
         except Exception as e:
@@ -715,7 +649,6 @@ class ChatGPTBypassIntegration:
         except Exception as e:
             logging.error(f"Failed to stop bypass system: {e}")
 
-# Example usage
 async def main():
     """Example usage of ChatGPT Bypass Integration"""
     config = {
@@ -736,7 +669,6 @@ async def main():
     try:
         await bypass.start_bypass()
         
-        # Test intelligence analysis
         intelligence_data = {
             'user_id': '12345',
             'messages': ['Hello world', 'How are you?'],
@@ -746,7 +678,6 @@ async def main():
         analysis = await bypass.analyze_intelligence_data(intelligence_data)
         print(f"Analysis: {analysis}")
         
-        # Test conversation starters
         user_profile = {
             'username': 'john_doe',
             'interests': ['technology', 'gaming'],

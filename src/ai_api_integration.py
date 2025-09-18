@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 AI API Integration - Real AI API calls for intelligence analysis
 """
@@ -74,11 +73,9 @@ class AIAPIIntegration:
         self.api_keys = {}
         self.models = {}
         
-        # Initialize AI providers
         self.initialize_providers()
         self.initialize_models()
         
-        # Start background tasks
         self.is_running = True
         asyncio.create_task(self.process_request_queue())
         asyncio.create_task(self.manage_rate_limits())
@@ -86,7 +83,6 @@ class AIAPIIntegration:
     def initialize_providers(self):
         """Initialize all AI providers"""
         try:
-            # OpenAI
             if 'openai' in self.config:
                 openai.api_key = self.config['openai']['api_key']
                 self.providers[AIProvider.OPENAI] = {
@@ -95,7 +91,6 @@ class AIAPIIntegration:
                     'models': ['gpt-4', 'gpt-3.5-turbo', 'gpt-4-turbo']
                 }
             
-            # Anthropic
             if 'anthropic' in self.config:
                 self.providers[AIProvider.ANTHROPIC] = {
                     'client': anthropic.Anthropic(api_key=self.config['anthropic']['api_key']),
@@ -103,7 +98,6 @@ class AIAPIIntegration:
                     'models': ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku']
                 }
             
-            # Google
             if 'google' in self.config:
                 genai.configure(api_key=self.config['google']['api_key'])
                 self.providers[AIProvider.GOOGLE] = {
@@ -112,7 +106,6 @@ class AIAPIIntegration:
                     'models': ['gemini-pro', 'gemini-pro-vision']
                 }
             
-            # Hugging Face
             if 'huggingface' in self.config:
                 self.providers[AIProvider.HUGGINGFACE] = {
                     'api_key': self.config['huggingface']['api_key'],
@@ -120,7 +113,6 @@ class AIAPIIntegration:
                     'models': ['microsoft/DialoGPT-medium', 'facebook/blenderbot-400M-distill']
                 }
             
-            # Cohere
             if 'cohere' in self.config:
                 self.providers[AIProvider.COHERE] = {
                     'api_key': self.config['cohere']['api_key'],
@@ -128,7 +120,6 @@ class AIAPIIntegration:
                     'models': ['command', 'command-light']
                 }
             
-            # Together AI
             if 'together' in self.config:
                 self.providers[AIProvider.TOGETHER] = {
                     'api_key': self.config['together']['api_key'],
@@ -145,31 +136,26 @@ class AIAPIIntegration:
     def initialize_models(self):
         """Initialize local models"""
         try:
-            # Sentiment analysis
             self.models['sentiment'] = pipeline(
                 "sentiment-analysis",
                 model="cardiffnlp/twitter-roberta-base-sentiment-latest"
             )
             
-            # Text classification
             self.models['classification'] = pipeline(
                 "zero-shot-classification",
                 model="facebook/bart-large-mnli"
             )
             
-            # Named entity recognition
             self.models['ner'] = pipeline(
                 "ner",
                 model="dbmdz/bert-large-cased-finetuned-conll03-english"
             )
             
-            # Text summarization
             self.models['summarization'] = pipeline(
                 "summarization",
                 model="facebook/bart-large-cnn"
             )
             
-            # Question answering
             self.models['qa'] = pipeline(
                 "question-answering",
                 model="deepset/roberta-base-squad2"
@@ -183,7 +169,6 @@ class AIAPIIntegration:
     async def analyze_sentiment(self, text: str, provider: AIProvider = AIProvider.OPENAI) -> Dict[str, Any]:
         """Analyze sentiment of text using AI"""
         try:
-            # Try local model first
             if len(text) < 1000:
                 local_result = self.models['sentiment'](text)
                 return {
@@ -193,7 +178,6 @@ class AIAPIIntegration:
                     'model': 'twitter-roberta-base-sentiment'
                 }
             
-            # Use AI provider for longer text
             prompt = f"""
             Analyze the sentiment of the following text and provide:
             1. Sentiment (positive, negative, neutral)
@@ -224,7 +208,6 @@ class AIAPIIntegration:
             threat_level = 'low'
             confidence = 0.0
             
-            # Use local classification model
             local_result = self.models['classification'](
                 text,
                 candidate_labels=[
@@ -238,7 +221,6 @@ class AIAPIIntegration:
                 threat_level = 'high' if local_result['scores'][0] > 0.8 else 'medium'
                 confidence = local_result['scores'][0]
             
-            # Use AI providers for deeper analysis
             providers_to_try = [AIProvider.OPENAI, AIProvider.ANTHROPIC, AIProvider.GOOGLE]
             
             for provider in providers_to_try:
@@ -300,10 +282,8 @@ class AIAPIIntegration:
     async def analyze_behavior_patterns(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze user behavior patterns using AI"""
         try:
-            # Prepare behavior data
             behavior_text = self.prepare_behavior_text(user_data)
             
-            # Use multiple AI providers for comprehensive analysis
             analyses = []
             
             for provider in [AIProvider.OPENAI, AIProvider.ANTHROPIC]:
@@ -315,7 +295,6 @@ class AIAPIIntegration:
                         logging.warning(f"Behavior analysis failed with {provider}: {e}")
                         continue
             
-            # Combine analyses
             combined_analysis = self.combine_behavior_analyses(analyses)
             
             return combined_analysis
@@ -360,10 +339,8 @@ class AIAPIIntegration:
     async def generate_intelligence_report(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive intelligence report using AI"""
         try:
-            # Prepare report data
             report_data = self.prepare_report_data(data)
             
-            # Use best available AI provider
             provider = self.get_best_provider_for_task('report_generation')
             
             prompt = f"""
@@ -405,10 +382,8 @@ class AIAPIIntegration:
     async def predict_user_behavior(self, user_data: Dict[str, Any], timeframe: str = "7 days") -> Dict[str, Any]:
         """Predict user behavior using AI"""
         try:
-            # Prepare prediction data
             prediction_data = self.prepare_prediction_data(user_data)
             
-            # Use multiple AI providers for prediction
             predictions = []
             
             for provider in [AIProvider.OPENAI, AIProvider.ANTHROPIC, AIProvider.GOOGLE]:
@@ -420,7 +395,6 @@ class AIAPIIntegration:
                         logging.warning(f"Behavior prediction failed with {provider}: {e}")
                         continue
             
-            # Combine predictions
             combined_prediction = self.combine_predictions(predictions)
             
             return combined_prediction
@@ -468,11 +442,9 @@ class AIAPIIntegration:
             if provider not in self.providers:
                 raise ValueError(f"Provider {provider} not available")
             
-            # Check rate limits
             if not self.check_rate_limit(provider):
                 await asyncio.sleep(1)
             
-            # Create request
             request = AIRequest(
                 request_id=str(uuid.uuid4()),
                 provider=provider,
@@ -483,7 +455,6 @@ class AIAPIIntegration:
                 timestamp=datetime.now()
             )
             
-            # Call provider
             start_time = time.time()
             
             if provider == AIProvider.OPENAI:
@@ -503,7 +474,6 @@ class AIAPIIntegration:
             
             processing_time = time.time() - start_time
             
-            # Update rate limits
             self.update_rate_limit(provider)
             
             return response
@@ -527,7 +497,7 @@ class AIAPIIntegration:
                 provider=request.provider,
                 model=request.model,
                 response=response.choices[0].message.content,
-                confidence=0.9,  # OpenAI doesn't provide confidence scores
+                confidence=0.9,
                 tokens_used=response.usage.total_tokens,
                 processing_time=0.0,
                 timestamp=datetime.now(),
@@ -714,7 +684,7 @@ class AIAPIIntegration:
         """Get best model for specific task"""
         try:
             if provider not in self.providers:
-                return "gpt-3.5-turbo"  # Default fallback
+                return "gpt-3.5-turbo"
             
             models = self.providers[provider]['models']
             
@@ -733,7 +703,7 @@ class AIAPIIntegration:
                 elif 'gemini-pro' in models:
                     return 'gemini-pro'
             
-            return models[0]  # Return first available model
+            return models[0]
             
         except Exception as e:
             logging.error(f"Error getting best model: {e}")
@@ -742,7 +712,6 @@ class AIAPIIntegration:
     def get_best_provider_for_task(self, task_type: str) -> AIProvider:
         """Get best provider for specific task"""
         try:
-            # Priority order for different tasks
             if task_type == 'analysis':
                 if AIProvider.OPENAI in self.providers:
                     return AIProvider.OPENAI
@@ -758,7 +727,6 @@ class AIAPIIntegration:
                 elif AIProvider.GOOGLE in self.providers:
                     return AIProvider.GOOGLE
             
-            # Return first available provider
             return list(self.providers.keys())[0]
             
         except Exception as e:
@@ -774,7 +742,6 @@ class AIAPIIntegration:
             rate_limit = self.rate_limits[provider]
             provider_config = self.providers[provider]
             
-            # Reset counter if needed
             if (datetime.now() - rate_limit['last_reset']).seconds >= 60:
                 rate_limit['requests'] = 0
                 rate_limit['last_reset'] = datetime.now()
@@ -814,7 +781,6 @@ class AIAPIIntegration:
         """Manage rate limits for all providers"""
         while self.is_running:
             try:
-                # Reset rate limits every minute
                 for provider in self.rate_limits:
                     if (datetime.now() - self.rate_limits[provider]['last_reset']).seconds >= 60:
                         self.rate_limits[provider]['requests'] = 0
@@ -826,7 +792,6 @@ class AIAPIIntegration:
                 logging.error(f"Rate limit management error: {e}")
                 await asyncio.sleep(60)
     
-    # Helper methods for data preparation and parsing
     def prepare_behavior_text(self, user_data: Dict[str, Any]) -> str:
         """Prepare behavior data as text"""
         try:
@@ -834,7 +799,7 @@ class AIAPIIntegration:
             
             if 'messages' in user_data:
                 text_parts.append(f"Messages: {len(user_data['messages'])} total")
-                for msg in user_data['messages'][:10]:  # First 10 messages
+                for msg in user_data['messages'][:10]:
                     text_parts.append(f"- {msg.get('text', '')[:100]}...")
             
             if 'behavioral_patterns' in user_data:
@@ -874,19 +839,15 @@ class AIAPIIntegration:
         try:
             prediction_sections = []
             
-            # User profile
             if 'username' in user_data:
                 prediction_sections.append(f"User: {user_data['username']}")
             
-            # Activity patterns
             if 'behavioral_patterns' in user_data:
                 prediction_sections.append(f"Activity Patterns: {user_data['behavioral_patterns']}")
             
-            # Recent activity
             if 'recent_activity' in user_data:
                 prediction_sections.append(f"Recent Activity: {user_data['recent_activity']}")
             
-            # Risk factors
             if 'risk_factors' in user_data:
                 prediction_sections.append(f"Risk Factors: {user_data['risk_factors']}")
             
@@ -899,10 +860,8 @@ class AIAPIIntegration:
     def parse_sentiment_response(self, response: AIResponse) -> Dict[str, Any]:
         """Parse sentiment analysis response"""
         try:
-            # Try to extract JSON from response
             response_text = response.response
             
-            # Look for JSON in response
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
@@ -913,7 +872,6 @@ class AIAPIIntegration:
                     'model': response.model
                 }
             
-            # Fallback to text analysis
             if 'positive' in response_text.lower():
                 sentiment = 'positive'
             elif 'negative' in response_text.lower():
@@ -937,7 +895,6 @@ class AIAPIIntegration:
         try:
             response_text = response.response
             
-            # Look for JSON in response
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
@@ -949,7 +906,6 @@ class AIAPIIntegration:
                     'recommended_actions': parsed.get('recommended_actions', [])
                 }
             
-            # Fallback to text analysis
             threat_level = 'low'
             if 'high' in response_text.lower():
                 threat_level = 'high'
@@ -973,7 +929,6 @@ class AIAPIIntegration:
         try:
             response_text = response.response
             
-            # Look for JSON in response
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
@@ -987,7 +942,6 @@ class AIAPIIntegration:
                     'recommendations': parsed.get('recommendations', [])
                 }
             
-            # Fallback to text analysis
             return {
                 'behavior_type': 'normal',
                 'personality_traits': [],
@@ -1007,7 +961,6 @@ class AIAPIIntegration:
         try:
             response_text = response.response
             
-            # Look for JSON in response
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
@@ -1020,7 +973,6 @@ class AIAPIIntegration:
                     'uncertainty_factors': parsed.get('uncertainty_factors', [])
                 }
             
-            # Fallback to text analysis
             return {
                 'predicted_activities': [],
                 'risk_level': 'low',
@@ -1040,7 +992,6 @@ class AIAPIIntegration:
             if not analyses:
                 return {'error': 'No analyses to combine'}
             
-            # Combine results
             combined = {
                 'behavior_type': 'normal',
                 'personality_traits': [],
@@ -1052,30 +1003,23 @@ class AIAPIIntegration:
                 'analysis_count': len(analyses)
             }
             
-            # Aggregate results
             for analysis in analyses:
                 if 'error' not in analysis:
-                    # Combine traits
                     if 'personality_traits' in analysis:
                         combined['personality_traits'].extend(analysis['personality_traits'])
                     
-                    # Combine risk factors
                     if 'risk_factors' in analysis:
                         combined['risk_factors'].extend(analysis['risk_factors'])
                     
-                    # Combine indicators
                     if 'behavioral_indicators' in analysis:
                         combined['behavioral_indicators'].extend(analysis['behavioral_indicators'])
                     
-                    # Combine recommendations
                     if 'recommendations' in analysis:
                         combined['recommendations'].extend(analysis['recommendations'])
                     
-                    # Average confidence
                     if 'confidence' in analysis:
                         combined['confidence'] += analysis['confidence']
             
-            # Finalize results
             combined['confidence'] /= len(analyses)
             combined['personality_traits'] = list(set(combined['personality_traits']))
             combined['risk_factors'] = list(set(combined['risk_factors']))
@@ -1094,7 +1038,6 @@ class AIAPIIntegration:
             if not predictions:
                 return {'error': 'No predictions to combine'}
             
-            # Combine results
             combined = {
                 'predicted_activities': [],
                 'risk_level': 'low',
@@ -1105,30 +1048,23 @@ class AIAPIIntegration:
                 'prediction_count': len(predictions)
             }
             
-            # Aggregate results
             for prediction in predictions:
                 if 'error' not in prediction:
-                    # Combine activities
                     if 'predicted_activities' in prediction:
                         combined['predicted_activities'].extend(prediction['predicted_activities'])
                     
-                    # Combine factors
                     if 'key_factors' in prediction:
                         combined['key_factors'].extend(prediction['key_factors'])
                     
-                    # Combine recommendations
                     if 'recommendations' in prediction:
                         combined['recommendations'].extend(prediction['recommendations'])
                     
-                    # Combine uncertainty factors
                     if 'uncertainty_factors' in prediction:
                         combined['uncertainty_factors'].extend(prediction['uncertainty_factors'])
                     
-                    # Average confidence
                     if 'confidence' in prediction:
                         combined['confidence'] += prediction['confidence']
             
-            # Finalize results
             combined['confidence'] /= len(predictions)
             combined['predicted_activities'] = list(set(combined['predicted_activities']))
             combined['key_factors'] = list(set(combined['key_factors']))
@@ -1144,13 +1080,11 @@ class AIAPIIntegration:
     async def process_request(self, request: AIRequest):
         """Process individual AI request"""
         try:
-            # This would handle queued requests
             pass
             
         except Exception as e:
             logging.error(f"Request processing error: {e}")
 
-# Example usage
 async def main():
     """Example usage of AI API Integration"""
     config = {
@@ -1182,15 +1116,12 @@ async def main():
     
     ai_integration = AIAPIIntegration(config)
     
-    # Test sentiment analysis
     sentiment = await ai_integration.analyze_sentiment("This is a great product!")
     print(f"Sentiment: {sentiment}")
     
-    # Test threat detection
     threat = await ai_integration.detect_threats("I'm going to hurt someone")
     print(f"Threat: {threat}")
     
-    # Test behavior analysis
     behavior = await ai_integration.analyze_behavior_patterns({
         'messages': [{'text': 'Hello world'}],
         'behavioral_patterns': {'frequency': 'high'}

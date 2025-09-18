@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Promotion Activity Analyzer
 Advanced analysis of giveaways, promotions, and social engineering tactics
@@ -105,27 +104,22 @@ class PromotionActivityAnalyzer:
     async def analyze_promotion(self, message_data: Dict[str, Any]) -> Optional[PromotionDetails]:
         """Analyze a potential promotional message"""
         try:
-            # Extract basic info
             text = message_data.get('text', '').lower()
             user_id = message_data.get('user_id', '')
             username = message_data.get('username', '')
             
-            # Detect promotion type
             promotion_type = self.detect_promotion_type(text)
             if not promotion_type:
                 return None
             
-            # Extract promotion details
             requirements = self.extract_requirements(text)
             prize_description = self.extract_prize_description(text)
             time_info = self.extract_time_information(text)
             
-            # Analyze risk
             risk_analysis = self.analyze_promotion_risk(
                 text, requirements, prize_description, message_data
             )
             
-            # Create promotion details
             promotion = PromotionDetails(
                 promotion_id=f"promo_{hash(text)}_{int(datetime.now().timestamp())}",
                 promotion_type=promotion_type,
@@ -135,17 +129,15 @@ class PromotionActivityAnalyzer:
                 end_time=time_info.get('end_time'),
                 requirements=requirements,
                 prize_description=prize_description,
-                participant_count=0,  # Will be updated as users participate
+                participant_count=0,
                 channel_ids=[message_data.get('chat_id', '')],
                 is_suspicious=risk_analysis['is_suspicious'],
                 risk_score=risk_analysis['risk_score'],
                 analysis=risk_analysis
             )
             
-            # Store in history
             self.promotion_history[promotion.promotion_id] = promotion
             
-            # Update channel patterns
             self.update_channel_patterns(promotion)
             
             return promotion
@@ -181,7 +173,6 @@ class PromotionActivityAnalyzer:
         """Extract participation requirements"""
         requirements = []
         
-        # Common requirement patterns
         requirement_patterns = [
             r'must \w+',
             r'need to \w+',
@@ -206,13 +197,12 @@ class PromotionActivityAnalyzer:
                 if requirement:
                     requirements.append(requirement)
         
-        return list(set(requirements))  # Remove duplicates
+        return list(set(requirements))
     
     def extract_prize_description(self, text: str) -> str:
         """Extract prize description"""
         prize = ""
         
-        # Prize patterns
         prize_patterns = [
             r'\d+\s*(?:eth|btc|bnb|sol|usd)',
             r'\d+\s*(?:nft|whitelist spots|tokens)',
@@ -239,7 +229,6 @@ class PromotionActivityAnalyzer:
             'end_time': None
         }
         
-        # Time patterns
         time_patterns = {
             'ends_in_hours': r'ends in (\d+)\s*hours?',
             'ends_in_minutes': r'ends in (\d+)\s*minutes?',
@@ -276,14 +265,12 @@ class PromotionActivityAnalyzer:
             'urgency_indicators': []
         }
         
-        # Check for scam patterns
         for category, patterns in self.known_scam_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, text.lower()):
                     risk_analysis['risk_score'] += 0.2
                     risk_analysis['scam_indicators'].append(f"{category}: {pattern}")
         
-        # Check requirements
         suspicious_requirements = [
             req for req in requirements
             if any(word in req.lower() for word in ['send', 'deposit', 'fee', 'connect', 'validate'])
@@ -292,12 +279,10 @@ class PromotionActivityAnalyzer:
             risk_analysis['risk_score'] += 0.3
             risk_analysis['risk_factors'].extend(suspicious_requirements)
         
-        # Check prize description
         if any(keyword in prize_description.lower() for keyword in self.suspicious_prize_keywords):
             risk_analysis['risk_score'] += 0.2
             risk_analysis['risk_factors'].append('suspicious_prize')
         
-        # Check for urgency tactics
         urgency_words = ['quick', 'fast', 'hurry', 'limited', 'last chance', 'ending']
         if any(word in text.lower() for word in urgency_words):
             risk_analysis['risk_score'] += 0.1
@@ -305,13 +290,11 @@ class PromotionActivityAnalyzer:
                 [word for word in urgency_words if word in text.lower()]
             )
         
-        # Check creator history
         creator_history = self.get_creator_history(message_data.get('user_id', ''))
         if creator_history.get('previous_scams', 0) > 0:
             risk_analysis['risk_score'] += 0.4
             risk_analysis['risk_factors'].append('creator_history')
         
-        # Check for manipulation tactics
         manipulation_words = ['trust', 'legit', 'real', 'official', 'verified', 'guaranteed']
         if any(word in text.lower() for word in manipulation_words):
             risk_analysis['risk_score'] += 0.1
@@ -319,7 +302,6 @@ class PromotionActivityAnalyzer:
                 [word for word in manipulation_words if word in text.lower()]
             )
         
-        # Final risk assessment
         risk_analysis['risk_score'] = min(risk_analysis['risk_score'], 1.0)
         risk_analysis['is_suspicious'] = risk_analysis['risk_score'] > 0.5
         
@@ -363,7 +345,6 @@ class PromotionActivityAnalyzer:
                 'risk_score': promotion.risk_score
             })
             
-            # Keep only recent history
             self.channel_promotion_patterns[channel_id] = [
                 p for p in self.channel_promotion_patterns[channel_id]
                 if p['timestamp'] > datetime.now() - timedelta(days=30)
@@ -393,10 +374,8 @@ class PromotionActivityAnalyzer:
             'temporal_patterns': self.analyze_temporal_patterns(patterns)
         }
         
-        # Calculate suspicious ratio
         analysis['suspicious_ratio'] = analysis['suspicious_count'] / analysis['total_promotions']
         
-        # Determine risk level
         if analysis['average_risk_score'] > 0.8:
             analysis['risk_level'] = 'critical'
         elif analysis['average_risk_score'] > 0.6:
@@ -404,7 +383,6 @@ class PromotionActivityAnalyzer:
         elif analysis['average_risk_score'] > 0.4:
             analysis['risk_level'] = 'medium'
         
-        # Get common promotion types
         analysis['common_types'] = [
             type_name for type_name, count in analysis['promotion_types'].most_common(3)
         ]
@@ -418,13 +396,11 @@ class PromotionActivityAnalyzer:
         if not timestamps:
             return {}
         
-        # Sort timestamps
         timestamps.sort()
         
-        # Calculate intervals
         intervals = []
         for i in range(1, len(timestamps)):
-            interval = (timestamps[i] - timestamps[i-1]).total_seconds() / 3600  # hours
+            interval = (timestamps[i] - timestamps[i-1]).total_seconds() / 3600
             intervals.append(interval)
         
         if not intervals:
@@ -444,10 +420,10 @@ class PromotionActivityAnalyzer:
         current_burst = []
         
         for i, interval in enumerate(intervals):
-            if interval < 1.0:  # Less than 1 hour
+            if interval < 1.0:
                 current_burst.append(interval)
             else:
-                if len(current_burst) > 2:  # At least 3 promotions in burst
+                if len(current_burst) > 2:
                     bursts.append({
                         'size': len(current_burst) + 1,
                         'average_interval': sum(current_burst) / len(current_burst),
@@ -455,7 +431,6 @@ class PromotionActivityAnalyzer:
                     })
                 current_burst = []
         
-        # Check last burst
         if len(current_burst) > 2:
             bursts.append({
                 'size': len(current_burst) + 1,
@@ -496,7 +471,6 @@ class PromotionActivityAnalyzer:
         if promotion.analysis.get('manipulation_tactics'):
             recommendations.append("ALERT: Uses manipulation tactics - Exercise caution")
         
-        # Add channel-specific recommendations
         for channel_id in promotion.channel_ids:
             channel_analysis = self.analyze_channel_promotion_patterns(channel_id)
             if channel_analysis['risk_level'] in ['high', 'critical']:
@@ -504,12 +478,10 @@ class PromotionActivityAnalyzer:
         
         return recommendations
 
-# Example usage
 async def main():
     """Example usage of PromotionActivityAnalyzer"""
     analyzer = PromotionActivityAnalyzer()
     
-    # Example promotion message
     message_data = {
         'text': """🎉 HUGE GIVEAWAY! 🎉
         Win 5 ETH + Rare NFT! 🚀
@@ -529,7 +501,6 @@ async def main():
         'chat_id': 'channel_123'
     }
     
-    # Analyze promotion
     promotion = await analyzer.analyze_promotion(message_data)
     
     if promotion:

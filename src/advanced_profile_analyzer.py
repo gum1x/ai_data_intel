@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Advanced Profile Analyzer - NFT, Channel Links, and Mutual Channel Analysis
 Enhanced profiling for hidden networks and suspicious activities
@@ -20,14 +19,12 @@ import requests
 from urllib.parse import urlparse, parse_qs
 import networkx as nx
 
-# Telegram and blockchain
 from telethon import TelegramClient
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.channels import GetFullChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest
 from telethon.tl.types import User, Channel, Chat
 
-# Web scraping and analysis
 from bs4 import BeautifulSoup
 import whois
 import dns.resolver
@@ -97,26 +94,25 @@ class NFTAnalyzer:
     """Analyzer for NFT holdings and blockchain data"""
     
     def __init__(self):
-        self.opensea_api_key = None  # Would be configured
-        self.etherscan_api_key = None  # Would be configured
+        self.opensea_api_key = None
+        self.etherscan_api_key = None
         self.nft_contracts = self.load_nft_contracts()
         self.suspicious_collections = self.load_suspicious_collections()
     
     def load_nft_contracts(self) -> Dict[str, Dict[str, Any]]:
         """Load known NFT contract information"""
         return {
-            # Popular collections with risk indicators
-            "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d": {  # Bored Ape Yacht Club
+            "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d": {
                 "name": "Bored Ape Yacht Club",
                 "risk_level": "medium",
                 "indicators": ["high_value", "status_symbol"]
             },
-            "0x60e4d786628fea6478f785a6d7e704777c86a7c6": {  # Mutant Ape Yacht Club
+            "0x60e4d786628fea6478f785a6d7e704777c86a7c6": {
                 "name": "Mutant Ape Yacht Club", 
                 "risk_level": "medium",
                 "indicators": ["high_value", "status_symbol"]
             },
-            "0xed5af388653567af2f388e6224dc7c4b3241c544": {  # Azuki
+            "0xed5af388653567af2f388e6224dc7c4b3241c544": {
                 "name": "Azuki",
                 "risk_level": "low",
                 "indicators": ["art_collection"]
@@ -126,9 +122,8 @@ class NFTAnalyzer:
     def load_suspicious_collections(self) -> Set[str]:
         """Load suspicious NFT collection addresses"""
         return {
-            # Collections known for money laundering or scams
-            "0x1234567890abcdef",  # Example suspicious contract
-            "0xabcdef1234567890",  # Example scam contract
+            "0x1234567890abcdef",
+            "0xabcdef1234567890",
         }
     
     async def analyze_nft_holdings(self, user_data: Dict[str, Any]) -> List[NFTHolding]:
@@ -136,15 +131,12 @@ class NFTAnalyzer:
         nft_holdings = []
         
         try:
-            # Extract wallet addresses from bio and other sources
             wallet_addresses = self.extract_wallet_addresses(user_data)
             
             for wallet_address in wallet_addresses:
-                # Get NFT holdings for this wallet
                 holdings = await self.get_nft_holdings(wallet_address)
                 nft_holdings.extend(holdings)
             
-            # Analyze holdings for suspicious patterns
             nft_holdings = self.analyze_nft_patterns(nft_holdings)
             
         except Exception as e:
@@ -156,20 +148,16 @@ class NFTAnalyzer:
         """Extract wallet addresses from user data"""
         addresses = []
         
-        # Extract from bio
         bio = user_data.get('bio', '')
         if bio:
-            # Ethereum addresses
             eth_pattern = r'0x[a-fA-F0-9]{40}'
             eth_addresses = re.findall(eth_pattern, bio)
             addresses.extend(eth_addresses)
             
-            # Bitcoin addresses
             btc_pattern = r'[13][a-km-zA-HJ-NP-Z1-9]{25,34}'
             btc_addresses = re.findall(btc_pattern, bio)
             addresses.extend(btc_addresses)
         
-        # Extract from messages
         messages = user_data.get('messages', [])
         for message in messages:
             text = message.get('text', '')
@@ -177,14 +165,13 @@ class NFTAnalyzer:
                 eth_addresses = re.findall(eth_pattern, text)
                 addresses.extend(eth_addresses)
         
-        return list(set(addresses))  # Remove duplicates
+        return list(set(addresses))
     
     async def get_nft_holdings(self, wallet_address: str) -> List[NFTHolding]:
         """Get NFT holdings for a wallet address"""
         holdings = []
         
         try:
-            # Use OpenSea API to get NFT holdings
             async with aiohttp.ClientSession() as session:
                 url = f"https://api.opensea.io/api/v1/assets"
                 params = {
@@ -220,8 +207,6 @@ class NFTAnalyzer:
     def calculate_rarity_score(self, asset: Dict[str, Any]) -> Optional[float]:
         """Calculate rarity score for NFT"""
         try:
-            # This would calculate actual rarity based on traits
-            # For now, return a mock score
             return 0.75
         except:
             return None
@@ -231,7 +216,7 @@ class NFTAnalyzer:
         try:
             last_sale = asset.get('last_sale')
             if last_sale:
-                return float(last_sale.get('total_price', 0)) / 10**18  # Convert from wei
+                return float(last_sale.get('total_price', 0)) / 10**18
             return None
         except:
             return None
@@ -239,8 +224,7 @@ class NFTAnalyzer:
     def get_owner_since(self, asset: Dict[str, Any]) -> Optional[datetime]:
         """Get when user became owner"""
         try:
-            # This would parse ownership history
-            return datetime.now() - timedelta(days=30)  # Mock data
+            return datetime.now() - timedelta(days=30)
         except:
             return None
     
@@ -250,16 +234,13 @@ class NFTAnalyzer:
         
         contract_address = asset.get('asset_contract', {}).get('address', '').lower()
         
-        # Check if collection is in suspicious list
         if contract_address in self.suspicious_collections:
             indicators.append('suspicious_collection')
         
-        # Check for high-value NFTs (potential money laundering)
         floor_price = float(asset.get('collection', {}).get('stats', {}).get('floor_price', 0))
-        if floor_price > 10:  # More than 10 ETH
+        if floor_price > 10:
             indicators.append('high_value_nft')
         
-        # Check for recently created collections
         created_date = asset.get('asset_contract', {}).get('created_date')
         if created_date:
             created_dt = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
@@ -271,11 +252,9 @@ class NFTAnalyzer:
     def analyze_nft_patterns(self, holdings: List[NFTHolding]) -> List[NFTHolding]:
         """Analyze NFT holdings for suspicious patterns"""
         for holding in holdings:
-            # Check for wash trading patterns
             if len(holding.transaction_history) > 10:
                 holding.suspicious_indicators.append('high_transaction_frequency')
             
-            # Check for rapid buying/selling
             if holding.owner_since and holding.owner_since > datetime.now() - timedelta(days=7):
                 holding.suspicious_indicators.append('recent_acquisition')
         
@@ -312,7 +291,6 @@ class ChannelLinkAnalyzer:
             if not bio:
                 return channel_links
             
-            # Extract Telegram channel links
             telegram_links = self.extract_telegram_links(bio)
             
             for link in telegram_links:
@@ -329,36 +307,30 @@ class ChannelLinkAnalyzer:
         """Extract Telegram channel links from bio"""
         links = []
         
-        # t.me links
         tme_pattern = r'https?://t\.me/[a-zA-Z0-9_]+'
         tme_links = re.findall(tme_pattern, bio)
         links.extend(tme_links)
         
-        # @username mentions
         username_pattern = r'@[a-zA-Z0-9_]+'
         usernames = re.findall(username_pattern, bio)
         for username in usernames:
-            links.append(f"https://t.me/{username[1:]}")  # Remove @
+            links.append(f"https://t.me/{username[1:]}")
         
-        return list(set(links))  # Remove duplicates
+        return list(set(links))
     
     async def analyze_channel_link(self, link: str) -> Optional[ChannelLink]:
         """Analyze individual channel link"""
         try:
-            # Parse URL
             parsed_url = urlparse(link)
             channel_username = parsed_url.path.lstrip('/')
             
-            # Check cache first
             if channel_username in self.channel_analysis_cache:
                 return self.channel_analysis_cache[channel_username]
             
-            # Get channel information
             channel_info = await self.get_channel_info(channel_username)
             if not channel_info:
                 return None
             
-            # Analyze channel content and risk
             content_analysis = await self.analyze_channel_content(channel_info)
             risk_assessment = self.assess_channel_risk(channel_info, content_analysis)
             
@@ -376,7 +348,6 @@ class ChannelLinkAnalyzer:
                 risk_assessment=risk_assessment
             )
             
-            # Cache result
             self.channel_analysis_cache[channel_username] = channel_link
             
             return channel_link
@@ -388,8 +359,6 @@ class ChannelLinkAnalyzer:
     async def get_channel_info(self, channel_username: str) -> Optional[Dict[str, Any]]:
         """Get channel information from Telegram"""
         try:
-            # This would use Telegram API to get channel info
-            # For now, return mock data
             return {
                 'title': f'Channel {channel_username}',
                 'description': 'Channel description',
@@ -416,16 +385,13 @@ class ChannelLinkAnalyzer:
             title = channel_info.get('title', '').lower()
             description = channel_info.get('description', '').lower()
             
-            # Check for suspicious keywords
             for keyword in self.suspicious_keywords:
                 if keyword in title or keyword in description:
                     analysis['suspicious_keywords'].append(keyword)
             
-            # Calculate content risk score
             risk_score = len(analysis['suspicious_keywords']) * 0.2
             analysis['content_risk_score'] = min(risk_score, 1.0)
             
-            # Analyze member count patterns
             member_count = channel_info.get('participants_count', 0)
             if member_count < 100:
                 analysis['member_analysis']['small_community'] = True
@@ -442,13 +408,11 @@ class ChannelLinkAnalyzer:
         risk_factors = []
         risk_score = 0.0
         
-        # Content risk
         content_risk = content_analysis.get('content_risk_score', 0.0)
         if content_risk > 0.5:
             risk_factors.append('suspicious_content')
             risk_score += content_risk * 0.4
         
-        # Member count risk
         member_count = channel_info.get('participants_count', 0)
         if member_count < 50:
             risk_factors.append('very_small_community')
@@ -457,12 +421,10 @@ class ChannelLinkAnalyzer:
             risk_factors.append('very_large_community')
             risk_score += 0.1
         
-        # Verification status
         if not channel_info.get('verified', False):
             risk_factors.append('unverified_channel')
             risk_score += 0.1
         
-        # Restriction status
         if channel_info.get('restricted', False):
             risk_factors.append('restricted_access')
             risk_score += 0.2
@@ -497,10 +459,8 @@ class MutualChannelAnalyzer:
         mutual_channels = []
         
         try:
-            # Get user's channels
             user_channels = await self.get_user_channels(user_id, user_data)
             
-            # Find mutual channels with other users
             for channel_id in user_channels:
                 mutual_users = await self.get_mutual_users_in_channel(channel_id, user_id)
                 
@@ -519,7 +479,6 @@ class MutualChannelAnalyzer:
                     
                     mutual_channels.append(mutual_channel)
             
-            # Sort by network significance
             mutual_channels.sort(key=lambda x: x.network_significance, reverse=True)
             
         except Exception as e:
@@ -532,15 +491,12 @@ class MutualChannelAnalyzer:
         channels = []
         
         try:
-            # Extract from messages
             messages = user_data.get('messages', [])
             for message in messages:
                 chat_id = message.get('chat_id')
                 if chat_id and chat_id not in channels:
                     channels.append(chat_id)
             
-            # This would also query Telegram API for user's channels
-            # For now, return channels from messages
             
         except Exception as e:
             logging.error(f"Error getting user channels: {e}")
@@ -552,8 +508,6 @@ class MutualChannelAnalyzer:
         mutual_users = []
         
         try:
-            # This would query the channel for mutual users
-            # For now, return mock data
             mutual_users = ['user_001', 'user_002', 'user_003']
             
         except Exception as e:
@@ -564,11 +518,9 @@ class MutualChannelAnalyzer:
     async def get_channel_analysis(self, channel_id: str) -> Dict[str, Any]:
         """Get comprehensive channel analysis"""
         try:
-            # Check cache first
             if channel_id in self.channel_analysis_cache:
                 return self.channel_analysis_cache[channel_id]
             
-            # This would perform comprehensive channel analysis
             analysis = {
                 'title': f'Channel {channel_id}',
                 'username': f'channel_{channel_id}',
@@ -578,7 +530,6 @@ class MutualChannelAnalyzer:
                 'risk_assessment': {}
             }
             
-            # Cache result
             self.channel_analysis_cache[channel_id] = analysis
             
             return analysis
@@ -589,16 +540,12 @@ class MutualChannelAnalyzer:
     
     def calculate_connection_strength(self, mutual_users: List[str]) -> float:
         """Calculate connection strength based on mutual users"""
-        # More mutual users = stronger connection
         return min(len(mutual_users) / 10.0, 1.0)
     
     def calculate_network_significance(self, channel_id: str, mutual_users: List[str]) -> float:
         """Calculate network significance of the channel"""
-        # This would calculate based on channel importance and mutual user quality
         base_significance = len(mutual_users) * 0.1
         
-        # Add channel-specific factors
-        # For now, return base significance
         return min(base_significance, 1.0)
 
 class AdvancedProfileAnalyzer:
@@ -613,34 +560,26 @@ class AdvancedProfileAnalyzer:
     async def analyze_profile_comprehensive(self, user_id: str, user_data: Dict[str, Any]) -> AdvancedProfileAnalysis:
         """Perform comprehensive profile analysis"""
         try:
-            # Check cache first
             cache_key = f"{user_id}_{hashlib.md5(json.dumps(user_data, sort_keys=True).encode()).hexdigest()}"
             if cache_key in self.analysis_cache:
                 return self.analysis_cache[cache_key]
             
-            # Analyze NFT holdings
             nft_holdings = await self.nft_analyzer.analyze_nft_holdings(user_data)
             
-            # Analyze channel links
             channel_links = await self.channel_link_analyzer.analyze_channel_links(user_data)
             
-            # Analyze mutual channels
             mutual_channels = await self.mutual_channel_analyzer.analyze_mutual_channels(user_id, user_data)
             
-            # Analyze bio content
             bio_analysis = self.analyze_bio_content(user_data.get('bio', ''))
             
-            # Calculate hidden network score
             hidden_network_score = self.calculate_hidden_network_score(
                 nft_holdings, channel_links, mutual_channels, bio_analysis
             )
             
-            # Identify suspicious indicators
             suspicious_indicators = self.identify_suspicious_indicators(
                 nft_holdings, channel_links, mutual_channels, bio_analysis
             )
             
-            # Risk assessment
             risk_assessment = self.perform_risk_assessment(
                 nft_holdings, channel_links, mutual_channels, bio_analysis, suspicious_indicators
             )
@@ -658,7 +597,6 @@ class AdvancedProfileAnalyzer:
                 analysis_timestamp=datetime.now()
             )
             
-            # Cache result
             self.analysis_cache[cache_key] = analysis
             
             return analysis
@@ -685,7 +623,6 @@ class AdvancedProfileAnalyzer:
         
         bio_lower = bio.lower()
         
-        # Check for suspicious keywords
         suspicious_keywords = [
             'crypto', 'bitcoin', 'trading', 'investment', 'money', 'profit',
             'scam', 'fraud', 'hack', 'drugs', 'weapons', 'illegal',
@@ -696,7 +633,6 @@ class AdvancedProfileAnalyzer:
             if keyword in bio_lower:
                 analysis['suspicious_keywords'].append(keyword)
         
-        # Check for contact methods
         if '@' in bio:
             analysis['contact_methods'].append('email')
         if re.search(r'\+?[\d\s\-\(\)]{10,}', bio):
@@ -713,31 +649,24 @@ class AdvancedProfileAnalyzer:
         """Calculate hidden network score"""
         score = 0.0
         
-        # NFT holdings contribute to score
         if nft_holdings:
             score += 0.2
-            # High-value NFTs increase score
             high_value_nfts = [nft for nft in nft_holdings if nft.floor_price and nft.floor_price > 5]
             if high_value_nfts:
                 score += 0.1
         
-        # Channel links contribute to score
         if channel_links:
             score += 0.2
-            # Suspicious channels increase score
             suspicious_channels = [ch for ch in channel_links if ch.risk_assessment.get('risk_level') == 'high']
             if suspicious_channels:
                 score += 0.2
         
-        # Mutual channels contribute to score
         if mutual_channels:
             score += 0.2
-            # High network significance increases score
             high_significance_channels = [ch for ch in mutual_channels if ch.network_significance > 0.7]
             if high_significance_channels:
                 score += 0.1
         
-        # Bio analysis contributes to score
         if bio_analysis.get('suspicious_keywords'):
             score += 0.1
         if bio_analysis.get('has_crypto_addresses'):
@@ -754,21 +683,17 @@ class AdvancedProfileAnalyzer:
         """Identify suspicious indicators"""
         indicators = []
         
-        # NFT indicators
         for nft in nft_holdings:
             indicators.extend(nft.suspicious_indicators)
         
-        # Channel link indicators
         for channel in channel_links:
             if channel.risk_assessment.get('risk_level') == 'high':
                 indicators.append(f'high_risk_channel: {channel.channel_username}')
         
-        # Mutual channel indicators
         for mutual_channel in mutual_channels:
             if mutual_channel.network_significance > 0.8:
                 indicators.append(f'high_significance_mutual_channel: {mutual_channel.channel_title}')
         
-        # Bio indicators
         if bio_analysis.get('suspicious_keywords'):
             indicators.append('suspicious_bio_keywords')
         if bio_analysis.get('has_crypto_addresses'):
@@ -776,7 +701,7 @@ class AdvancedProfileAnalyzer:
         if len(bio_analysis.get('contact_methods', [])) > 2:
             indicators.append('multiple_contact_methods')
         
-        return list(set(indicators))  # Remove duplicates
+        return list(set(indicators))
     
     def perform_risk_assessment(self, nft_holdings: List[NFTHolding],
                               channel_links: List[ChannelLink],
@@ -787,7 +712,6 @@ class AdvancedProfileAnalyzer:
         risk_factors = []
         risk_score = 0.0
         
-        # NFT risk factors
         if nft_holdings:
             risk_factors.append('nft_holdings')
             risk_score += 0.1
@@ -797,7 +721,6 @@ class AdvancedProfileAnalyzer:
                 risk_factors.append('suspicious_nft_collections')
                 risk_score += 0.2
         
-        # Channel link risk factors
         if channel_links:
             risk_factors.append('channel_links_in_bio')
             risk_score += 0.1
@@ -807,7 +730,6 @@ class AdvancedProfileAnalyzer:
                 risk_factors.append('high_risk_channel_links')
                 risk_score += 0.3
         
-        # Mutual channel risk factors
         if mutual_channels:
             risk_factors.append('mutual_channel_connections')
             risk_score += 0.1
@@ -817,7 +739,6 @@ class AdvancedProfileAnalyzer:
                 risk_factors.append('high_significance_mutual_channels')
                 risk_score += 0.2
         
-        # Bio risk factors
         if bio_analysis.get('suspicious_keywords'):
             risk_factors.append('suspicious_bio_content')
             risk_score += 0.2
@@ -826,7 +747,6 @@ class AdvancedProfileAnalyzer:
             risk_factors.append('crypto_addresses_in_bio')
             risk_score += 0.2
         
-        # Overall risk level
         if risk_score >= 0.8:
             risk_level = 'critical'
         elif risk_score >= 0.6:
@@ -891,13 +811,10 @@ class AdvancedProfileAnalyzer:
             analysis_timestamp=datetime.now()
         )
 
-# Integration with main system
 async def integrate_with_main_system():
     """Integration function for main system"""
     analyzer = AdvancedProfileAnalyzer()
     
-    # This would be called from the main intelligence platform
-    # when analyzing user profiles
     
     return analyzer
 
@@ -906,11 +823,9 @@ if __name__ == "__main__":
     print("NFT, Channel Links, and Mutual Channel Analysis")
     print("Initializing...")
     
-    # Test the analyzer
     async def test_analyzer():
         analyzer = AdvancedProfileAnalyzer()
         
-        # Mock user data
         user_data = {
             'username': 'test_user',
             'bio': 'Crypto trader @cryptochannel t.me/investmentgroup 0x1234567890abcdef',

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Advanced ML Models - Deep learning for behavior prediction and anomaly detection
 """
@@ -59,22 +58,16 @@ class AdvancedMLModels:
     
     def initialize_models(self):
         """Initialize all ML models"""
-        # Behavior Prediction Model
         self.models[ModelType.BEHAVIOR_PREDICTION] = BehaviorPredictionModel()
         
-        # Anomaly Detection Model
         self.models[ModelType.ANOMALY_DETECTION] = AnomalyDetectionModel()
         
-        # Threat Classification Model
         self.models[ModelType.THREAT_CLASSIFICATION] = ThreatClassificationModel()
         
-        # User Clustering Model
         self.models[ModelType.USER_CLUSTERING] = UserClusteringModel()
         
-        # Activity Forecasting Model
         self.models[ModelType.ACTIVITY_FORECASTING] = ActivityForecastingModel()
         
-        # Sentiment Analysis Model
         self.models[ModelType.SENTIMENT_ANALYSIS] = SentimentAnalysisModel()
     
     async def train_behavior_prediction_model(self, training_data: pd.DataFrame) -> Dict[str, Any]:
@@ -82,28 +75,22 @@ class AdvancedMLModels:
         try:
             model = self.models[ModelType.BEHAVIOR_PREDICTION]
             
-            # Prepare features
             features = self.prepare_behavior_features(training_data)
             labels = self.prepare_behavior_labels(training_data)
             
-            # Split data
             X_train, X_test, y_train, y_test = train_test_split(
                 features, labels, test_size=0.2, random_state=42
             )
             
-            # Scale features
             scaler = StandardScaler()
             X_train_scaled = scaler.fit_transform(X_train)
             X_test_scaled = scaler.transform(X_test)
             
-            # Train model
             model.fit(X_train_scaled, y_train)
             
-            # Evaluate
             predictions = model.predict(X_test_scaled)
             accuracy = model.score(X_test_scaled, y_test)
             
-            # Save model
             self.scalers['behavior_prediction'] = scaler
             joblib.dump(model, 'models/behavior_prediction_model.pkl')
             
@@ -125,21 +112,16 @@ class AdvancedMLModels:
         try:
             model = self.models[ModelType.ANOMALY_DETECTION]
             
-            # Prepare features
             features = self.prepare_anomaly_features(training_data)
             
-            # Train model
             model.fit(features)
             
-            # Get anomaly scores
             anomaly_scores = model.decision_function(features)
             predictions = model.predict(features)
             
-            # Calculate statistics
             n_anomalies = sum(predictions == -1)
             anomaly_rate = n_anomalies / len(predictions)
             
-            # Save model
             joblib.dump(model, 'models/anomaly_detection_model.pkl')
             
             return {
@@ -159,31 +141,24 @@ class AdvancedMLModels:
         try:
             model = self.models[ModelType.THREAT_CLASSIFICATION]
             
-            # Prepare features
             features = self.prepare_threat_features(training_data)
             labels = self.prepare_threat_labels(training_data)
             
-            # Split data
             X_train, X_test, y_train, y_test = train_test_split(
                 features, labels, test_size=0.2, random_state=42
             )
             
-            # Scale features
             scaler = StandardScaler()
             X_train_scaled = scaler.fit_transform(X_train)
             X_test_scaled = scaler.transform(X_test)
             
-            # Train model
             model.fit(X_train_scaled, y_train)
             
-            # Evaluate
             predictions = model.predict(X_test_scaled)
             accuracy = model.score(X_test_scaled, y_test)
             
-            # Get classification report
             report = classification_report(y_test, predictions, output_dict=True)
             
-            # Save model
             self.scalers['threat_classification'] = scaler
             joblib.dump(model, 'models/threat_classification_model.pkl')
             
@@ -204,21 +179,16 @@ class AdvancedMLModels:
         try:
             model = self.models[ModelType.USER_CLUSTERING]
             
-            # Prepare features
             features = self.prepare_clustering_features(training_data)
             
-            # Scale features
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(features)
             
-            # Train model
             model.fit(features_scaled)
             
-            # Get cluster assignments
             cluster_labels = model.labels_
             n_clusters = len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)
             
-            # Calculate cluster statistics
             cluster_stats = {}
             for cluster_id in range(n_clusters):
                 cluster_mask = cluster_labels == cluster_id
@@ -229,7 +199,6 @@ class AdvancedMLModels:
                     'std': cluster_data.std(axis=0).tolist()
                 }
             
-            # Save model
             self.scalers['user_clustering'] = scaler
             joblib.dump(model, 'models/user_clustering_model.pkl')
             
@@ -250,20 +219,15 @@ class AdvancedMLModels:
         try:
             model = self.models[ModelType.ACTIVITY_FORECASTING]
             
-            # Prepare time series data
             time_series_data = self.prepare_time_series_data(training_data)
             
-            # Train LSTM model
             history = model.train_lstm(time_series_data)
             
-            # Make predictions
             predictions = model.predict_next_24_hours(time_series_data)
             
-            # Calculate metrics
             mse = model.calculate_mse(time_series_data, predictions)
             mae = model.calculate_mae(time_series_data, predictions)
             
-            # Save model
             model.save_model('models/activity_forecasting_model.h5')
             
             return {
@@ -283,22 +247,17 @@ class AdvancedMLModels:
         try:
             model = self.models[ModelType.SENTIMENT_ANALYSIS]
             
-            # Prepare text data
             texts = training_data['text'].tolist()
             labels = training_data['sentiment'].tolist()
             
-            # Train model
             history = model.train_transformer(texts, labels)
             
-            # Evaluate
-            test_texts = texts[-100:]  # Use last 100 samples for testing
+            test_texts = texts[-100:]
             test_labels = labels[-100:]
             predictions = model.predict_sentiment(test_texts)
             
-            # Calculate accuracy
             accuracy = sum(1 for p, l in zip(predictions, test_labels) if p == l) / len(predictions)
             
-            # Save model
             model.save_model('models/sentiment_analysis_model.h5')
             
             return {
@@ -343,7 +302,6 @@ class AdvancedMLModels:
         labels = []
         
         for _, row in data.iterrows():
-            # Create behavior categories
             if row.get('suspicious_indicators_count', 0) > 5:
                 label = 'suspicious'
             elif row.get('crypto_addresses_count', 0) > 2:
@@ -406,7 +364,6 @@ class AdvancedMLModels:
         labels = []
         
         for _, row in data.iterrows():
-            # Create threat categories
             if row.get('suspicious_indicators_count', 0) > 8:
                 label = 'high_threat'
             elif row.get('suspicious_indicators_count', 0) > 4:
@@ -446,13 +403,11 @@ class AdvancedMLModels:
     
     def prepare_time_series_data(self, data: pd.DataFrame) -> np.ndarray:
         """Prepare time series data for activity forecasting"""
-        # Group by hour and count activities
         data['timestamp'] = pd.to_datetime(data['timestamp'])
         data['hour'] = data['timestamp'].dt.hour
         
         hourly_activity = data.groupby('hour').size().values
         
-        # Pad with zeros if needed
         if len(hourly_activity) < 24:
             padded_activity = np.zeros(24)
             padded_activity[:len(hourly_activity)] = hourly_activity
@@ -557,14 +512,11 @@ class ActivityForecastingModel:
     
     def train_lstm(self, time_series_data: np.ndarray) -> Any:
         """Train LSTM model for activity forecasting"""
-        # Prepare data for LSTM
         X, y = self.prepare_lstm_data(time_series_data)
         
-        # Scale data
         X_scaled = self.scaler.fit_transform(X)
         y_scaled = self.scaler.transform(y.reshape(-1, 1))
         
-        # Build LSTM model
         self.model = tf.keras.Sequential([
             tf.keras.layers.LSTM(50, return_sequences=True, input_shape=(X.shape[1], 1)),
             tf.keras.layers.LSTM(50, return_sequences=False),
@@ -572,10 +524,8 @@ class ActivityForecastingModel:
             tf.keras.layers.Dense(1)
         ])
         
-        # Compile model
         self.model.compile(optimizer='adam', loss='mean_squared_error')
         
-        # Train model
         history = self.model.fit(
             X_scaled, y_scaled,
             batch_size=1,
@@ -601,7 +551,6 @@ class ActivityForecastingModel:
         if self.model is None:
             return np.zeros(24)
         
-        # Use last 24 hours to predict next 24 hours
         last_24_hours = time_series_data[-24:].reshape(1, 24, 1)
         predictions = []
         
@@ -609,7 +558,6 @@ class ActivityForecastingModel:
             pred = self.model.predict(last_24_hours, verbose=0)
             predictions.append(pred[0, 0])
             
-            # Update input for next prediction
             last_24_hours = np.roll(last_24_hours, -1, axis=1)
             last_24_hours[0, -1, 0] = pred[0, 0]
         
@@ -637,22 +585,16 @@ class SentimentAnalysisModel:
     
     def train_transformer(self, texts: List[str], labels: List[str]) -> Any:
         """Train transformer model for sentiment analysis"""
-        # Simple implementation using TF
-        # In production, you'd use a pre-trained model like BERT
         
-        # Tokenize texts
         tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=10000)
         tokenizer.fit_on_texts(texts)
         
-        # Convert texts to sequences
         sequences = tokenizer.texts_to_sequences(texts)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(sequences, maxlen=100)
         
-        # Encode labels
         label_encoder = LabelEncoder()
         encoded_labels = label_encoder.fit_transform(labels)
         
-        # Build model
         self.model = tf.keras.Sequential([
             tf.keras.layers.Embedding(10000, 128, input_length=100),
             tf.keras.layers.LSTM(64, return_sequences=True),
@@ -662,14 +604,12 @@ class SentimentAnalysisModel:
             tf.keras.layers.Dense(len(set(labels)), activation='softmax')
         ])
         
-        # Compile model
         self.model.compile(
             optimizer='adam',
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
         
-        # Train model
         history = self.model.fit(
             padded_sequences, encoded_labels,
             batch_size=32,
@@ -688,15 +628,12 @@ class SentimentAnalysisModel:
         if self.model is None or self.tokenizer is None:
             return ['neutral'] * len(texts)
         
-        # Tokenize texts
         sequences = self.tokenizer.texts_to_sequences(texts)
         padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(sequences, maxlen=100)
         
-        # Make predictions
         predictions = self.model.predict(padded_sequences, verbose=0)
         predicted_labels = np.argmax(predictions, axis=1)
         
-        # Convert back to string labels
         return [self.label_encoder.inverse_transform([label])[0] for label in predicted_labels]
     
     def save_model(self, filepath: str):
@@ -704,12 +641,10 @@ class SentimentAnalysisModel:
         if self.model:
             self.model.save(filepath)
 
-# Example usage
 async def main():
     """Example usage of AdvancedMLModels"""
     ml_models = AdvancedMLModels()
     
-    # Create sample training data
     sample_data = pd.DataFrame({
         'message_frequency': np.random.randint(1, 100, 1000),
         'avg_message_length': np.random.randint(10, 500, 1000),
@@ -726,7 +661,6 @@ async def main():
         'sentiment': np.random.choice(['positive', 'negative', 'neutral'], 1000)
     })
     
-    # Train models
     print("Training behavior prediction model...")
     behavior_results = await ml_models.train_behavior_prediction_model(sample_data)
     print(f"Behavior prediction accuracy: {behavior_results.get('accuracy', 0):.3f}")

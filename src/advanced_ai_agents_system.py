@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Advanced AI Agents System for Enterprise Telegram Intelligence Platform
 Specialized AI agents for different intelligence tasks with autonomous operation
@@ -19,7 +18,6 @@ import pandas as pd
 from collections import defaultdict, deque
 import networkx as nx
 
-# Advanced AI and ML
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -31,14 +29,12 @@ from langchain.memory import ConversationBufferMemory
 import faiss
 from sentence_transformers import SentenceTransformer
 
-# Agent communication
 import zmq
 import redis
 from kafka import KafkaProducer, KafkaConsumer
 import websockets
 import aiohttp
 
-# Task management
 from celery import Celery
 import ray
 from ray import tune
@@ -135,14 +131,11 @@ class BaseAgent(ABC):
         self.current_task = task
         
         try:
-            # Process the task
             result = await self.process_task(task)
             
-            # Update performance metrics
             execution_time = time.time() - start_time
             self.update_performance_metrics(task, result, execution_time)
             
-            # Learn from the task
             await self.learn_from_task(task, result)
             
             return result
@@ -163,7 +156,6 @@ class BaseAgent(ABC):
         
         self.performance_metrics['execution_times'].append(execution_time)
         
-        # Update success rate
         if 'success_count' not in self.performance_metrics:
             self.performance_metrics['success_count'] = 0
             self.performance_metrics['total_count'] = 0
@@ -183,14 +175,12 @@ class BaseAgent(ABC):
         
         self.learning_data.append(learning_data)
         
-        # Keep only recent learning data
         if len(self.learning_data) > 1000:
             self.learning_data = self.learning_data[-500:]
     
     async def communicate_with_agent(self, target_agent_id: str, message: Dict[str, Any]):
         """Communicate with another agent"""
         try:
-            # This would implement agent-to-agent communication
             logging.info(f"Agent {self.agent_id} communicating with {target_agent_id}")
         except Exception as e:
             logging.error(f"Agent communication error: {e}")
@@ -202,7 +192,7 @@ class IntelligenceAnalystAgent(BaseAgent):
         """Initialize intelligence analyst agent"""
         self.llm_chain = None
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.vector_index = faiss.IndexFlatIP(384)  # 384-dimensional embeddings
+        self.vector_index = faiss.IndexFlatIP(384)
         self.knowledge_base = {}
         self.analysis_templates = self.load_analysis_templates()
     
@@ -297,19 +287,14 @@ class IntelligenceAnalystAgent(BaseAgent):
     async def perform_threat_assessment(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform threat assessment analysis"""
         try:
-            # Extract features from data
             features = self.extract_threat_features(data)
             
-            # Generate embeddings
             embeddings = self.embedding_model.encode([str(features)])
             
-            # Search similar cases in knowledge base
             similar_cases = self.search_similar_cases(embeddings[0])
             
-            # Use LLM for analysis
             analysis_prompt = self.analysis_templates['threat_assessment'].format(data=json.dumps(data))
             
-            # This would use actual LLM
             analysis_result = {
                 'threat_level': 7.5,
                 'key_indicators': ['suspicious_communication', 'unusual_behavior'],
@@ -328,16 +313,12 @@ class IntelligenceAnalystAgent(BaseAgent):
     async def perform_pattern_analysis(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform pattern analysis"""
         try:
-            # Analyze temporal patterns
             temporal_patterns = self.analyze_temporal_patterns(data)
             
-            # Analyze behavioral patterns
             behavioral_patterns = self.analyze_behavioral_patterns(data)
             
-            # Analyze communication patterns
             communication_patterns = self.analyze_communication_patterns(data)
             
-            # Detect anomalies
             anomalies = self.detect_anomalies(data)
             
             return {
@@ -355,13 +336,10 @@ class IntelligenceAnalystAgent(BaseAgent):
     async def perform_correlation_analysis(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform correlation analysis"""
         try:
-            # Get known threats
             known_threats = data.get('known_threats', [])
             
-            # Find correlations
             correlations = self.find_correlations(data, known_threats)
             
-            # Identify new threat indicators
             new_indicators = self.identify_new_indicators(data, known_threats)
             
             return {
@@ -378,14 +356,12 @@ class IntelligenceAnalystAgent(BaseAgent):
         """Extract features for threat assessment"""
         features = {}
         
-        # Communication features
         if 'messages' in data:
             messages = data['messages']
             features['message_count'] = len(messages)
             features['avg_message_length'] = np.mean([len(msg.get('text', '')) for msg in messages])
             features['suspicious_keywords'] = self.count_suspicious_keywords(messages)
         
-        # User features
         if 'user_profile' in data:
             profile = data['user_profile']
             features['account_age'] = self.calculate_account_age(profile)
@@ -397,8 +373,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     def search_similar_cases(self, embedding: np.ndarray) -> List[Dict[str, Any]]:
         """Search for similar cases in knowledge base"""
         try:
-            # This would search the vector index
-            # For now, return mock data
             return [
                 {'case_id': 'case_001', 'similarity': 0.85, 'threat_level': 8.0},
                 {'case_id': 'case_002', 'similarity': 0.78, 'threat_level': 7.5}
@@ -409,7 +383,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def analyze_temporal_patterns(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze temporal patterns"""
-        # Mock implementation
         return {
             'activity_peaks': ['09:00-11:00', '14:00-16:00'],
             'activity_rhythm': 'regular',
@@ -418,7 +391,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def analyze_behavioral_patterns(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze behavioral patterns"""
-        # Mock implementation
         return {
             'communication_style': 'aggressive',
             'response_patterns': 'immediate',
@@ -427,7 +399,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def analyze_communication_patterns(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze communication patterns"""
-        # Mock implementation
         return {
             'language_patterns': ['crypto_terms', 'financial_terms'],
             'communication_frequency': 'high',
@@ -436,7 +407,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def detect_anomalies(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Detect anomalies in data"""
-        # Mock implementation
         return [
             {'type': 'unusual_activity', 'severity': 'medium', 'description': 'Unusual communication pattern'},
             {'type': 'suspicious_timing', 'severity': 'high', 'description': 'Activity during unusual hours'}
@@ -444,7 +414,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def find_correlations(self, data: Dict[str, Any], known_threats: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Find correlations with known threats"""
-        # Mock implementation
         return [
             {'threat_id': 'threat_001', 'correlation_strength': 0.85, 'indicators': ['similar_communication_style']},
             {'threat_id': 'threat_002', 'correlation_strength': 0.72, 'indicators': ['similar_behavioral_patterns']}
@@ -452,7 +421,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def identify_new_indicators(self, data: Dict[str, Any], known_threats: List[Dict[str, Any]]) -> List[str]:
         """Identify new threat indicators"""
-        # Mock implementation
         return ['new_communication_method', 'unusual_network_pattern']
     
     def count_suspicious_keywords(self, messages: List[Dict[str, Any]]) -> int:
@@ -470,7 +438,6 @@ class IntelligenceAnalystAgent(BaseAgent):
     
     def calculate_account_age(self, profile: Dict[str, Any]) -> int:
         """Calculate account age in days"""
-        # Mock implementation
         return 365
     
     def count_suspicious_indicators(self, profile: Dict[str, Any]) -> int:
@@ -493,7 +460,7 @@ class ThreatHunterAgent(BaseAgent):
         """Initialize threat hunter agent"""
         self.threat_database = {}
         self.hunting_patterns = self.load_hunting_patterns()
-        self.ioc_database = {}  # Indicators of Compromise
+        self.ioc_database = {}
         self.threat_intelligence_feeds = []
     
     def load_hunting_patterns(self) -> Dict[str, Any]:
@@ -562,19 +529,15 @@ class ThreatHunterAgent(BaseAgent):
         try:
             threats_found = []
             
-            # Hunt for financial crime
             financial_threats = await self.hunt_financial_crime(data)
             threats_found.extend(financial_threats)
             
-            # Hunt for drug trafficking
             drug_threats = await self.hunt_drug_trafficking(data)
             threats_found.extend(drug_threats)
             
-            # Hunt for cyber crime
             cyber_threats = await self.hunt_cyber_crime(data)
             threats_found.extend(cyber_threats)
             
-            # Generate hunting report
             hunting_report = {
                 'threats_found': threats_found,
                 'hunting_confidence': 0.88,
@@ -592,7 +555,6 @@ class ThreatHunterAgent(BaseAgent):
         """Hunt for financial crime indicators"""
         threats = []
         
-        # Check for financial crime keywords
         messages = data.get('messages', [])
         for message in messages:
             text = message.get('text', '').lower()
@@ -660,33 +622,27 @@ class ThreatHunterAgent(BaseAgent):
                 'file_hashes': []
             }
             
-            # Extract from messages
             messages = data.get('messages', [])
             for message in messages:
                 text = message.get('text', '')
                 
-                # Extract IP addresses
                 import re
                 ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
                 ips = re.findall(ip_pattern, text)
                 iocs['ip_addresses'].extend(ips)
                 
-                # Extract domains
                 domain_pattern = r'\b[a-zA-Z0-9-]+\.(?:[a-zA-Z]{2,})\b'
                 domains = re.findall(domain_pattern, text)
                 iocs['domains'].extend(domains)
                 
-                # Extract email addresses
                 email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
                 emails = re.findall(email_pattern, text)
                 iocs['email_addresses'].extend(emails)
                 
-                # Extract crypto addresses
-                crypto_pattern = r'\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b'  # Bitcoin
+                crypto_pattern = r'\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b'
                 crypto_addresses = re.findall(crypto_pattern, text)
                 iocs['crypto_addresses'].extend(crypto_addresses)
             
-            # Remove duplicates
             for key in iocs:
                 iocs[key] = list(set(iocs[key]))
             
@@ -703,8 +659,6 @@ class ThreatHunterAgent(BaseAgent):
     async def perform_threat_attribution(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform threat attribution analysis"""
         try:
-            # This would perform sophisticated threat attribution
-            # For now, return mock data
             return {
                 'attributed_group': 'unknown',
                 'confidence': 0.75,
@@ -802,16 +756,12 @@ class NetworkAnalystAgent(BaseAgent):
     async def perform_network_analysis(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform comprehensive network analysis"""
         try:
-            # Build network graph
             self.build_network_graph(data)
             
-            # Calculate network metrics
             network_metrics = self.calculate_network_metrics()
             
-            # Detect communities
             communities = self.detect_communities()
             
-            # Identify key players
             key_players = self.identify_key_players()
             
             return {
@@ -828,14 +778,11 @@ class NetworkAnalystAgent(BaseAgent):
     def build_network_graph(self, data: Dict[str, Any]):
         """Build network graph from data"""
         try:
-            # Clear existing graph
             self.network_graph.clear()
             
-            # Add nodes and edges from data
             users = data.get('users', [])
             connections = data.get('connections', [])
             
-            # Add user nodes
             for user in users:
                 self.network_graph.add_node(
                     user['id'],
@@ -843,7 +790,6 @@ class NetworkAnalystAgent(BaseAgent):
                     attributes=user.get('attributes', {})
                 )
             
-            # Add connections as edges
             for connection in connections:
                 self.network_graph.add_edge(
                     connection['user1'],
@@ -883,7 +829,6 @@ class NetworkAnalystAgent(BaseAgent):
             if self.network_graph.number_of_nodes() == 0:
                 return {}
             
-            # Use Louvain algorithm for community detection
             import networkx.algorithms.community as nx_comm
             
             communities = nx_comm.louvain_communities(self.network_graph)
@@ -914,13 +859,11 @@ class NetworkAnalystAgent(BaseAgent):
             if self.network_graph.number_of_nodes() == 0:
                 return {}
             
-            # Calculate centrality measures
             betweenness = nx.betweenness_centrality(self.network_graph)
             closeness = nx.closeness_centrality(self.network_graph)
             eigenvector = nx.eigenvector_centrality(self.network_graph, max_iter=1000)
             pagerank = nx.pagerank(self.network_graph)
             
-            # Combine centrality scores
             key_players = []
             for node in self.network_graph.nodes():
                 combined_score = (
@@ -939,7 +882,6 @@ class NetworkAnalystAgent(BaseAgent):
                     'pagerank': pagerank[node]
                 })
             
-            # Sort by combined score
             key_players.sort(key=lambda x: x['combined_score'], reverse=True)
             
             return {
@@ -967,18 +909,14 @@ class AgentCoordinator:
     
     def initialize_coordinator(self):
         """Initialize agent coordinator"""
-        # Initialize communication bus
         self.communication_bus = redis.Redis(host='localhost', port=6379, db=1)
         
-        # Initialize agents
         self.initialize_agents()
         
-        # Start coordination loop
         asyncio.create_task(self.coordination_loop())
     
     def initialize_agents(self):
         """Initialize all agents"""
-        # Intelligence Analyst Agent
         intel_agent = IntelligenceAnalystAgent(
             agent_id="intel_analyst_001",
             agent_type=AgentType.INTELLIGENCE_ANALYST,
@@ -986,7 +924,6 @@ class AgentCoordinator:
         )
         self.agents[intel_agent.agent_id] = intel_agent
         
-        # Threat Hunter Agent
         threat_agent = ThreatHunterAgent(
             agent_id="threat_hunter_001",
             agent_type=AgentType.THREAT_HUNTER,
@@ -994,7 +931,6 @@ class AgentCoordinator:
         )
         self.agents[threat_agent.agent_id] = threat_agent
         
-        # Network Analyst Agent
         network_agent = NetworkAnalystAgent(
             agent_id="network_analyst_001",
             agent_type=AgentType.NETWORK_ANALYST,
@@ -1002,7 +938,6 @@ class AgentCoordinator:
         )
         self.agents[network_agent.agent_id] = network_agent
         
-        # Build capability mapping
         self.build_capability_mapping()
     
     def build_capability_mapping(self):
@@ -1018,16 +953,13 @@ class AgentCoordinator:
         """Main coordination loop"""
         while True:
             try:
-                # Process task queue
                 await self.process_task_queue()
                 
-                # Check agent status
                 await self.check_agent_status()
                 
-                # Handle agent communication
                 await self.handle_agent_communication()
                 
-                await asyncio.sleep(1)  # 1 second loop
+                await asyncio.sleep(1)
                 
             except Exception as e:
                 logging.error(f"Coordination loop error: {e}")
@@ -1038,11 +970,9 @@ class AgentCoordinator:
         while self.task_queue:
             task = self.task_queue.pop(0)
             
-            # Find best agent for task
             best_agent = self.find_best_agent_for_task(task)
             
             if best_agent:
-                # Assign task to agent
                 await self.assign_task_to_agent(task, best_agent)
             else:
                 logging.warning(f"No suitable agent found for task: {task.task_id}")
@@ -1051,7 +981,6 @@ class AgentCoordinator:
         """Find the best agent for a task"""
         task_type = task.data.get('task_type', 'general')
         
-        # Find agents with matching capabilities
         suitable_agents = []
         
         for capability_id, agent_ids in self.agent_capabilities.items():
@@ -1064,7 +993,6 @@ class AgentCoordinator:
         if not suitable_agents:
             return None
         
-        # Select agent with best performance
         best_agent = None
         best_performance = 0
         
@@ -1081,7 +1009,7 @@ class AgentCoordinator:
     def calculate_agent_performance(self, agent: BaseAgent) -> float:
         """Calculate agent performance score"""
         if 'success_count' not in agent.performance_metrics:
-            return 0.5  # Default performance
+            return 0.5
         
         success_count = agent.performance_metrics['success_count']
         total_count = agent.performance_metrics['total_count']
@@ -1091,14 +1019,12 @@ class AgentCoordinator:
         
         success_rate = success_count / total_count
         
-        # Factor in execution time
         if 'execution_times' in agent.performance_metrics:
             avg_execution_time = np.mean(agent.performance_metrics['execution_times'])
-            time_score = max(0, 1 - (avg_execution_time / 60))  # Normalize to 1 minute
+            time_score = max(0, 1 - (avg_execution_time / 60))
         else:
             time_score = 0.5
         
-        # Combined performance score
         performance = (success_rate * 0.7) + (time_score * 0.3)
         
         return performance
@@ -1109,7 +1035,6 @@ class AgentCoordinator:
             agent = self.agents[agent_id]
             result = await agent.execute_task(task)
             
-            # Store result
             task.result = result
             task.status = "completed"
             
@@ -1125,11 +1050,9 @@ class AgentCoordinator:
         for agent_id, agent in self.agents.items():
             if agent.status == AgentStatus.ERROR:
                 logging.warning(f"Agent {agent_id} is in error state")
-                # Could implement recovery logic here
     
     async def handle_agent_communication(self):
         """Handle communication between agents"""
-        # This would implement agent-to-agent communication
         pass
     
     async def submit_task(self, task: AgentTask):
@@ -1137,13 +1060,11 @@ class AgentCoordinator:
         self.task_queue.append(task)
         logging.info(f"Task {task.task_id} submitted to coordinator")
 
-# Main execution
 async def main():
     """Main execution function"""
     coordinator = AgentCoordinator()
     
     try:
-        # Keep running
         while True:
             await asyncio.sleep(3600)
             
