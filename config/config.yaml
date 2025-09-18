@@ -1,0 +1,147 @@
+# AI Data Intelligence Platform Configuration
+
+system:
+  name: "AI Data Intelligence Platform"
+  version: "1.0.0"
+  environment: "development"  # development, staging, production
+  debug: true
+  log_level: "INFO"
+
+security:
+  encryption_key: ""  # Set in .env
+  jwt_secret: ""      # Set in .env
+  api_keys: []        # Set in .env
+  allowed_ips: []     # Set in .env
+
+telegram:
+  api_id: ""          # Set in .env
+  api_hash: ""        # Set in .env
+  phone_numbers: []   # Set in .env
+  session_files: []   # Set in .env
+
+blockchain:
+  networks:
+    ethereum:
+      rpc_url: ""     # Set in .env
+      chain_id: 1
+      enabled: true
+    polygon:
+      rpc_url: ""     # Set in .env
+      chain_id: 137
+      enabled: true
+    bsc:
+      rpc_url: ""     # Set in .env
+      chain_id: 56
+      enabled: true
+  ipfs:
+    node_url: "http://localhost:5001"
+    gateway_url: "http://localhost:8080"
+
+ai_agents:
+  intelligence_analyst:
+    enabled: true
+    models:
+      - name: "behavior_prediction"
+        type: "tensorflow"
+        path: "models/behavior_prediction"
+      - name: "anomaly_detection"
+        type: "pytorch"
+        path: "models/anomaly_detection"
+  threat_hunter:
+    enabled: true
+    update_interval: 3600
+    confidence_threshold: 0.8
+  network_analyst:
+    enabled: true
+    graph_analysis: true
+    community_detection: true
+
+analytics:
+  kafka:
+    bootstrap_servers: ["localhost:9092"]
+    topics:
+      - name: "telegram_messages"
+        partitions: 3
+        replication: 1
+      - name: "user_events"
+        partitions: 3
+        replication: 1
+      - name: "suspicious_activities"
+        partitions: 3
+        replication: 1
+  spark:
+    master_url: "local[*]"
+    app_name: "AI Data Intelligence"
+    checkpoint_location: "data/checkpoints"
+
+storage:
+  redis:
+    host: "localhost"
+    port: 6379
+    db: 0
+  elasticsearch:
+    hosts: ["http://localhost:9200"]
+    index_prefix: "ai_intel"
+  cassandra:
+    hosts: ["localhost"]
+    keyspace: "ai_intelligence"
+
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+  jaeger:
+    enabled: true
+    agent_host: "localhost"
+    agent_port: 6831
+
+profile_analysis:
+  nft:
+    enabled: true
+    chains: ["ethereum", "polygon"]
+    refresh_interval: 3600
+  channel_links:
+    enabled: true
+    max_depth: 3
+    cache_duration: 86400
+  mutual_channels:
+    enabled: true
+    min_connections: 2
+    significance_threshold: 0.5
+
+threat_intelligence:
+  osint:
+    enabled: true
+    sources:
+      - name: "blockchain_explorer"
+        enabled: true
+      - name: "social_media_intel"
+        enabled: true
+      - name: "dark_web_monitor"
+        enabled: false
+  risk_assessment:
+    low_threshold: 0.3
+    medium_threshold: 0.6
+    high_threshold: 0.8
+
+api:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8000
+  rate_limit:
+    enabled: true
+    requests: 100
+    window: 60  # seconds
+  cors:
+    enabled: true
+    origins: ["*"]
+  endpoints:
+    - path: "/api/v1/intelligence"
+      methods: ["GET", "POST"]
+      auth_required: true
+    - path: "/api/v1/analysis"
+      methods: ["GET", "POST"]
+      auth_required: true
+    - path: "/api/v1/profiles"
+      methods: ["GET"]
+      auth_required: true
