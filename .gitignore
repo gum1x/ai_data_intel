@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+telegram_data_dump.csv
+telegram_proxies.txt
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Session files
+*.session
+*.session-journal
+
+# Blockchain
+node_modules/
+.secret
+
+# IPFS
+.ipfs/
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Security
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.priv
+*.pub
