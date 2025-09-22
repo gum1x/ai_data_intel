@@ -1089,27 +1089,27 @@ async def main():
     """Example usage of AI API Integration"""
     config = {
         'openai': {
-            'api_key': 'your-openai-api-key',
+            'api_key': os.getenv('OPENAI_API_KEY', 'your-openai-api-key'),
             'rate_limit': 60
         },
         'anthropic': {
-            'api_key': 'your-anthropic-api-key',
+            'api_key': os.getenv('ANTHROPIC_API_KEY', 'your-anthropic-api-key'),
             'rate_limit': 60
         },
         'google': {
-            'api_key': 'your-google-api-key',
+            'api_key': os.getenv('GOOGLE_API_KEY', 'your-google-api-key'),
             'rate_limit': 60
         },
         'huggingface': {
-            'api_key': 'your-huggingface-api-key',
+            'api_key': os.getenv('HUGGINGFACE_API_KEY', 'your-huggingface-api-key'),
             'rate_limit': 60
         },
         'cohere': {
-            'api_key': 'your-cohere-api-key',
+            'api_key': os.getenv('COHERE_API_KEY', 'your-cohere-api-key'),
             'rate_limit': 60
         },
         'together': {
-            'api_key': 'your-together-api-key',
+            'api_key': os.getenv('TOGETHER_API_KEY', 'your-together-api-key'),
             'rate_limit': 60
         }
     }
