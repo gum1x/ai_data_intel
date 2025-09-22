@@ -73,18 +73,19 @@ def create_config_yaml():
         print("⚠️  config.yaml already exists or template not found")
 
 def create_telegram_bot_instructions():
-    """Create instructions for setting up Telegram Bot"""
+    """Create instructions for setting up Telegram Client API"""
     instructions = """
-# 🤖 Telegram Bot Setup Instructions
+# 🤖 Telegram Client API Setup Instructions
 
-## Step 1: Create a Telegram Bot
-1. Open Telegram and search for @BotFather
-2. Send `/newbot` command
-3. Choose a name for your bot (e.g., "Intelligence Bot")
-4. Choose a username (must end with 'bot', e.g., "intelligence_system_bot")
-5. Copy the bot token provided by BotFather
+## ⚠️ IMPORTANT: Use Client API, Not Bot API
+The system now uses the Telegram Client API (MTProto) instead of the Bot API because:
+- ✅ Can join private channels and groups
+- ✅ Can access full user information
+- ✅ Can read message history
+- ✅ Can get detailed chat information
+- ❌ Bot API is limited and can't access private channels
 
-## Step 2: Get Telegram API Credentials
+## Step 1: Get Telegram API Credentials
 1. Go to https://my.telegram.org/auth
 2. Log in with your phone number
 3. Go to "API development tools"
@@ -92,25 +93,48 @@ def create_telegram_bot_instructions():
    - App title: "Intelligence System"
    - Short name: "intel_sys"
    - Platform: "Desktop"
+   - Description: "AI Intelligence System for data collection"
 5. Copy the API ID and API Hash
 
-## Step 3: Configure the System
+## Step 2: Configure the System
 1. Edit the .env file and add:
-   - TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
    - TELEGRAM_API_ID=your_api_id_from_my_telegram_org
    - TELEGRAM_API_HASH=your_api_hash_from_my_telegram_org
    - TELEGRAM_PHONE_NUMBER=your_phone_number_with_country_code
+   - TELEGRAM_SESSION_STRING=your_session_string_here (optional)
 
-## Step 4: Test the Bot
+## Step 3: Authentication Process
 1. Start the system: `python run_system.py`
-2. Send a message to your bot on Telegram
-3. Check the logs to see if messages are being received
+2. The system will prompt for phone number verification
+3. Enter the verification code sent to your phone
+4. If you have 2FA enabled, enter your password
+5. The system will save the session for future use
+
+## Step 4: Join Target Channels
+1. Manually join the channels/groups you want to monitor
+2. The system will automatically start collecting data
+3. Check the logs to see collection progress
 
 ## Important Notes:
-- Keep your API credentials secure and never commit them to version control
-- The bot token allows full control of your bot
-- The API ID and Hash are tied to your Telegram account
-- Rate limits apply: 30 messages per second for bots
+- ⚠️ This uses YOUR Telegram account - be careful with what you access
+- 🔒 Keep your API credentials secure and never commit them to version control
+- 📱 The phone number must be the same as your Telegram account
+- 🚫 Don't abuse the API - respect rate limits and Telegram's ToS
+- 💾 Session strings allow reconnection without re-authentication
+- 🔄 Rate limits: 30 requests per second (configurable)
+
+## Security Considerations:
+- Use a dedicated Telegram account for the system
+- Don't use your personal account
+- Monitor API usage to avoid account restrictions
+- Keep session strings secure (they provide full account access)
+- Consider using Telegram's test servers for development
+
+## Troubleshooting:
+- If authentication fails, check your phone number format (+country_code)
+- If you get "PHONE_NUMBER_INVALID", ensure the number matches your Telegram account
+- If you get rate limited, reduce the rate_limit_per_second setting
+- If session expires, delete the session string and re-authenticate
 """
     
     with open("TELEGRAM_SETUP.md", 'w') as f:

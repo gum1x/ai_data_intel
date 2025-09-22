@@ -102,10 +102,17 @@ ai_providers:
     rate_limit: 60
 
 telegram:
+  # Bot API (limited access - can't join private channels)
   bot_token: "your-telegram-bot-token-here"
+  
+  # Client API (full access - can join private channels and get user data)
   api_id: 12345
   api_hash: "your-telegram-api-hash-here"
   phone_number: "+1234567890"
+  session_string: "your-session-string-here"  # Optional: for session persistence
+  use_test_dc: false  # Set to true for testing with Telegram test servers
+  
+  # Collection settings
   max_concurrent_sessions: 5
   rate_limit_per_second: 30
   batch_size: 1000

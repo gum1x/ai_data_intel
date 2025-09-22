@@ -1,4 +1,5 @@
 pub mod telegram_collector;
+pub mod telegram_client;
 pub mod web_scraper;
 pub mod real_web_scraper;
 pub mod api_collector;
@@ -7,6 +8,7 @@ pub mod social_media_collector;
 pub mod data_ingestion;
 pub mod stream_processor;
 pub use telegram_collector::*;
+pub use telegram_client::*;
 pub use web_scraper::*;
 pub use real_web_scraper::*;
 pub use api_collector::*;

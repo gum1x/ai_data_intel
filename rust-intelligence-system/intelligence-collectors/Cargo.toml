@@ -23,6 +23,8 @@ regex = "1.10"
 url = "2.4"
 select = "0.6"
 telegram-bot = "0.20"
+telegram-client = "0.1"
+teloxide = "0.12"
 web3 = { workspace = true }
 ethers = { workspace = true }
 scraping = "0.1"
