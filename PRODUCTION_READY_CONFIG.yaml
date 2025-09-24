@@ -1,0 +1,466 @@
+# 🚀 Production-Ready Intelligence System Configuration
+# This configuration makes the system ready for commercial deployment
+
+# System Configuration
+system:
+  name: "AI Intelligence System"
+  version: "2.0.0"
+  environment: "production"
+  debug: false
+  log_level: "INFO"
+  
+  # Performance Settings
+  performance:
+    max_concurrent_requests: 1000
+    max_memory_usage: "8GB"
+    max_cpu_usage: 80
+    connection_timeout: 30
+    request_timeout: 60
+    batch_size: 1000
+    
+  # Security Settings
+  security:
+    enable_encryption: true
+    enable_authentication: true
+    enable_authorization: true
+    session_timeout: 3600
+    max_login_attempts: 5
+    password_min_length: 12
+    require_2fa: true
+
+# Database Configuration
+database:
+  primary:
+    type: "postgresql"
+    host: "${DATABASE_HOST}"
+    port: 5432
+    name: "${DATABASE_NAME}"
+    username: "${DATABASE_USER}"
+    password: "${DATABASE_PASSWORD}"
+    ssl_mode: "require"
+    max_connections: 100
+    connection_timeout: 30
+    idle_timeout: 600
+    
+  # Read replicas for load balancing
+  replicas:
+    - host: "${DATABASE_REPLICA_1}"
+      port: 5432
+      weight: 0.5
+    - host: "${DATABASE_REPLICA_2}"
+      port: 5432
+      weight: 0.5
+      
+  # Redis for caching
+  cache:
+    type: "redis"
+    host: "${REDIS_HOST}"
+    port: 6379
+    password: "${REDIS_PASSWORD}"
+    database: 0
+    max_connections: 50
+    timeout: 5
+    ttl: 3600
+
+# Message Queue Configuration
+messaging:
+  kafka:
+    bootstrap_servers: ["${KAFKA_BOOTSTRAP_SERVER_1}", "${KAFKA_BOOTSTRAP_SERVER_2}"]
+    security_protocol: "SASL_SSL"
+    sasl_mechanism: "PLAIN"
+    sasl_username: "${KAFKA_USERNAME}"
+    sasl_password: "${KAFKA_PASSWORD}"
+    group_id: "intelligence-system"
+    auto_offset_reset: "latest"
+    enable_auto_commit: true
+    max_poll_records: 500
+    session_timeout: 30000
+    heartbeat_interval: 3000
+    
+  # Dead letter queue for failed messages
+  dead_letter_queue:
+    topic: "intelligence-dlq"
+    max_retries: 3
+    retry_delay: 5000
+
+# AI Provider Configuration
+ai_providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    model: "gpt-4-turbo"
+    max_tokens: 4000
+    temperature: 0.7
+    rate_limit: 60
+    timeout: 30
+    
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-3-opus"
+    max_tokens: 4000
+    temperature: 0.7
+    rate_limit: 60
+    timeout: 30
+    
+  google:
+    api_key: "${GOOGLE_API_KEY}"
+    model: "gemini-pro"
+    max_tokens: 4000
+    temperature: 0.7
+    rate_limit: 60
+    timeout: 30
+    
+  huggingface:
+    api_key: "${HUGGINGFACE_API_KEY}"
+    base_url: "https://api-inference.huggingface.co"
+    model: "microsoft/DialoGPT-large"
+    rate_limit: 30
+    timeout: 30
+    
+  cohere:
+    api_key: "${COHERE_API_KEY}"
+    model: "command"
+    max_tokens: 4000
+    temperature: 0.7
+    rate_limit: 60
+    timeout: 30
+    
+  together:
+    api_key: "${TOGETHER_API_KEY}"
+    base_url: "https://api.together.xyz/v1"
+    model: "meta-llama/Llama-2-70b-chat-hf"
+    max_tokens: 4000
+    temperature: 0.7
+    rate_limit: 30
+    timeout: 30
+
+# Data Collection Configuration
+data_collection:
+  telegram:
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    api_id: "${TELEGRAM_API_ID}"
+    api_hash: "${TELEGRAM_API_HASH}"
+    phone_number: "${TELEGRAM_PHONE_NUMBER}"
+    session_string: "${TELEGRAM_SESSION_STRING}"
+    use_test_dc: false
+    rate_limit: 30
+    batch_size: 100
+    timeout: 30
+    
+  # Blockchain Configuration
+  blockchain:
+    ethereum:
+      rpc_url: "${ETHEREUM_RPC_URL}"
+      api_key: "${ETHERSCAN_API_KEY}"
+      rate_limit: 5
+      timeout: 30
+      
+    bitcoin:
+      rpc_url: "${BITCOIN_RPC_URL}"
+      api_key: "${BLOCKCYPHER_API_KEY}"
+      rate_limit: 5
+      timeout: 30
+      
+    polygon:
+      rpc_url: "${POLYGON_RPC_URL}"
+      api_key: "${POLYGONSCAN_API_KEY}"
+      rate_limit: 5
+      timeout: 30
+      
+    bsc:
+      rpc_url: "${BSC_RPC_URL}"
+      api_key: "${BSCSCAN_API_KEY}"
+      rate_limit: 5
+      timeout: 30
+      
+    avalanche:
+      rpc_url: "${AVALANCHE_RPC_URL}"
+      api_key: "${SNOWTRACE_API_KEY}"
+      rate_limit: 5
+      timeout: 30
+      
+  # Social Media Configuration
+  social_media:
+    twitter:
+      bearer_token: "${TWITTER_BEARER_TOKEN}"
+      api_key: "${TWITTER_API_KEY}"
+      api_secret: "${TWITTER_API_SECRET}"
+      access_token: "${TWITTER_ACCESS_TOKEN}"
+      access_secret: "${TWITTER_ACCESS_SECRET}"
+      rate_limit: 15
+      timeout: 30
+      
+    reddit:
+      client_id: "${REDDIT_CLIENT_ID}"
+      client_secret: "${REDDIT_CLIENT_SECRET}"
+      user_agent: "IntelligenceSystem/2.0"
+      rate_limit: 10
+      timeout: 30
+      
+    instagram:
+      access_token: "${INSTAGRAM_ACCESS_TOKEN}"
+      rate_limit: 20
+      timeout: 30
+      
+    facebook:
+      access_token: "${FACEBOOK_ACCESS_TOKEN}"
+      rate_limit: 20
+      timeout: 30
+      
+    linkedin:
+      access_token: "${LINKEDIN_ACCESS_TOKEN}"
+      rate_limit: 20
+      timeout: 30
+      
+  # Web Scraping Configuration
+  web_scraping:
+    user_agent: "Mozilla/5.0 (compatible; IntelligenceSystem/2.0)"
+    rate_limit: 10
+    timeout: 30
+    max_retries: 3
+    retry_delay: 1000
+    respect_robots_txt: true
+    concurrent_requests: 50
+    
+  # API Collection Configuration
+  api_collection:
+    default_timeout: 30
+    default_rate_limit: 10
+    max_concurrent_requests: 100
+    retry_attempts: 3
+    retry_delay: 1000
+    
+    # Common API endpoints
+    endpoints:
+      - name: "cryptocurrency_prices"
+        url: "https://api.coingecko.com/api/v3"
+        method: "GET"
+        rate_limit: 50
+        timeout: 30
+        
+      - name: "news_api"
+        url: "https://newsapi.org/v2"
+        method: "GET"
+        auth_type: "ApiKey"
+        rate_limit: 100
+        timeout: 30
+
+# Machine Learning Configuration
+ml_models:
+  sentiment_analysis:
+    model_name: "cardiffnlp/twitter-roberta-base-sentiment-latest"
+    provider: "huggingface"
+    batch_size: 32
+    max_length: 512
+    confidence_threshold: 0.7
+    
+  threat_detection:
+    model_name: "microsoft/DialoGPT-large"
+    provider: "huggingface"
+    batch_size: 16
+    max_length: 1024
+    confidence_threshold: 0.8
+    
+  anomaly_detection:
+    algorithm: "isolation_forest"
+    contamination: 0.1
+    n_estimators: 100
+    max_samples: 256
+    
+  behavior_prediction:
+    model_name: "microsoft/DialoGPT-large"
+    provider: "huggingface"
+    batch_size: 16
+    max_length: 1024
+    confidence_threshold: 0.6
+    
+  entity_recognition:
+    model_name: "dbmdz/bert-large-cased-finetuned-conll03-english"
+    provider: "huggingface"
+    batch_size: 32
+    max_length: 512
+    confidence_threshold: 0.7
+
+# Monitoring and Observability
+monitoring:
+  metrics:
+    enabled: true
+    endpoint: "/metrics"
+    port: 9090
+    interval: 30
+    
+  logging:
+    level: "INFO"
+    format: "json"
+    output: "stdout"
+    file_path: "/var/log/intelligence-system.log"
+    max_size: "100MB"
+    max_files: 10
+    
+  tracing:
+    enabled: true
+    endpoint: "http://jaeger:14268/api/traces"
+    service_name: "intelligence-system"
+    sample_rate: 0.1
+    
+  health_checks:
+    enabled: true
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    
+  alerts:
+    enabled: true
+    webhook_url: "${ALERT_WEBHOOK_URL}"
+    thresholds:
+      error_rate: 5.0
+      response_time: 1000
+      memory_usage: 80.0
+      cpu_usage: 80.0
+
+# Security Configuration
+security:
+  authentication:
+    type: "jwt"
+    secret: "${JWT_SECRET}"
+    algorithm: "HS256"
+    expiration: 3600
+    refresh_expiration: 86400
+    
+  authorization:
+    type: "rbac"
+    default_role: "viewer"
+    roles:
+      - name: "admin"
+        permissions: ["*"]
+      - name: "analyst"
+        permissions: ["read", "analyze", "export"]
+      - name: "viewer"
+        permissions: ["read"]
+        
+  encryption:
+    algorithm: "AES-256-GCM"
+    key: "${ENCRYPTION_KEY}"
+    
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+    burst_size: 10
+    
+  cors:
+    enabled: true
+    allowed_origins: ["${ALLOWED_ORIGINS}"]
+    allowed_methods: ["GET", "POST", "PUT", "DELETE"]
+    allowed_headers: ["*"]
+    max_age: 86400
+
+# Deployment Configuration
+deployment:
+  environment: "production"
+  replicas: 3
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+      
+  # Auto-scaling
+  autoscaling:
+    enabled: true
+    min_replicas: 3
+    max_replicas: 10
+    target_cpu_utilization: 70
+    target_memory_utilization: 80
+    
+  # Health checks
+  liveness_probe:
+    http_get:
+      path: "/health/live"
+      port: 8080
+    initial_delay_seconds: 30
+    period_seconds: 10
+    timeout_seconds: 5
+    failure_threshold: 3
+    
+  readiness_probe:
+    http_get:
+      path: "/health/ready"
+      port: 8080
+    initial_delay_seconds: 5
+    period_seconds: 5
+    timeout_seconds: 3
+    failure_threshold: 3
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  storage:
+    type: "s3"
+    bucket: "${BACKUP_S3_BUCKET}"
+    region: "${BACKUP_S3_REGION}"
+    access_key: "${BACKUP_S3_ACCESS_KEY}"
+    secret_key: "${BACKUP_S3_SECRET_KEY}"
+    
+# Disaster Recovery
+disaster_recovery:
+  enabled: true
+  rto: 3600  # Recovery Time Objective: 1 hour
+  rpo: 900   # Recovery Point Objective: 15 minutes
+  backup_frequency: 3600  # 1 hour
+  cross_region_replication: true
+  failover_automation: true
+
+# Compliance Configuration
+compliance:
+  gdpr:
+    enabled: true
+    data_retention_days: 2555  # 7 years
+    right_to_erasure: true
+    data_portability: true
+    
+  soc2:
+    enabled: true
+    audit_logging: true
+    access_controls: true
+    data_encryption: true
+    
+  iso27001:
+    enabled: true
+    risk_assessment: true
+    incident_response: true
+    security_monitoring: true
+
+# Feature Flags
+features:
+  real_time_processing: true
+  ai_analysis: true
+  blockchain_monitoring: true
+  social_media_monitoring: true
+  web_scraping: true
+  api_collection: true
+  machine_learning: true
+  threat_detection: true
+  anomaly_detection: true
+  behavior_analysis: true
+  network_analysis: true
+  data_export: true
+  real_time_alerts: true
+  dashboard: true
+  api_access: true
+  webhook_integrations: true
+  batch_processing: true
+  data_ingestion: true
+  data_transformation: true
+  data_validation: true
+  data_quality_checks: true
+  duplicate_detection: true
+  data_classification: true
+  data_anonymization: true
+  audit_logging: true
+  performance_monitoring: true
+  error_tracking: true
+  usage_analytics: true

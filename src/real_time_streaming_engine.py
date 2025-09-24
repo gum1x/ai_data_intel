@@ -564,88 +564,832 @@ class RealTimeStreamingEngine:
         return "low"
     
     async def extract_behavioral_indicators(self, message_data: Dict[str, Any]) -> List[str]:
-        """Extract behavioral indicators"""
-        return []
+        """Extract behavioral indicators from message data"""
+        indicators = []
+        
+        try:
+            content = message_data.get('content', '')
+            timestamp = message_data.get('timestamp', datetime.now())
+            
+            # Message frequency analysis
+            user_id = message_data.get('user_id', '')
+            if user_id in self.user_activity_cache:
+                recent_messages = [msg for msg in self.user_activity_cache[user_id] 
+                                 if (timestamp - msg['timestamp']).seconds < 3600]
+                if len(recent_messages) > 50:  # More than 50 messages per hour
+                    indicators.append('high_message_frequency')
+            
+            # Content analysis
+            if len(content) > 1000:
+                indicators.append('long_messages')
+            
+            if content.count('!') > 5:
+                indicators.append('excessive_exclamation')
+            
+            if content.count('?') > 5:
+                indicators.append('excessive_questions')
+            
+            # Time pattern analysis
+            hour = timestamp.hour
+            if hour < 6 or hour > 23:
+                indicators.append('unusual_timing')
+            
+            # Language analysis
+            if any(word in content.lower() for word in ['urgent', 'asap', 'immediately']):
+                indicators.append('urgency_language')
+            
+            # Link analysis
+            if content.count('http') > 3:
+                indicators.append('excessive_links')
+            
+            # Emoji analysis
+            emoji_count = sum(1 for char in content if ord(char) > 127)
+            if emoji_count > 10:
+                indicators.append('excessive_emoji')
+            
+        except Exception as e:
+            logging.error(f"Error extracting behavioral indicators: {e}")
+        
+        return indicators
     
     async def analyze_network_connections(self, message_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze network connections"""
-        return {}
+        """Analyze network connections and relationships"""
+        try:
+            user_id = message_data.get('user_id', '')
+            chat_id = message_data.get('chat_id', '')
+            
+            # Initialize user network if not exists
+            if user_id not in self.network_graph:
+                self.network_graph[user_id] = {
+                    'connections': set(),
+                    'chats': set(),
+                    'interaction_count': 0,
+                    'last_seen': datetime.now()
+                }
+            
+            # Update network data
+            network_data = self.network_graph[user_id]
+            network_data['chats'].add(chat_id)
+            network_data['interaction_count'] += 1
+            network_data['last_seen'] = datetime.now()
+            
+            # Analyze mentions and replies
+            content = message_data.get('content', '')
+            mentions = self.extract_mentions(content)
+            for mention in mentions:
+                network_data['connections'].add(mention)
+            
+            # Calculate network metrics
+            connection_count = len(network_data['connections'])
+            chat_count = len(network_data['chats'])
+            interaction_density = network_data['interaction_count'] / max(connection_count, 1)
+            
+            return {
+                'user_id': user_id,
+                'connection_count': connection_count,
+                'chat_count': chat_count,
+                'interaction_density': interaction_density,
+                'connections': list(network_data['connections']),
+                'chats': list(network_data['chats']),
+                'last_seen': network_data['last_seen'].isoformat()
+            }
+            
+        except Exception as e:
+            logging.error(f"Error analyzing network connections: {e}")
+            return {'error': str(e)}
     
     async def calculate_behavioral_score(self, activity_data: Dict[str, Any]) -> float:
-        """Calculate behavioral score"""
-        return 0.5
+        """Calculate behavioral score based on activity patterns"""
+        try:
+            score = 0.5  # Base score
+            
+            # Message frequency factor
+            messages_per_hour = activity_data.get('messages_per_hour', 0)
+            if messages_per_hour > 20:
+                score += 0.1
+            elif messages_per_hour < 1:
+                score -= 0.1
+            
+            # Time consistency factor
+            time_consistency = activity_data.get('time_consistency', 0.5)
+            score += (time_consistency - 0.5) * 0.2
+            
+            # Content diversity factor
+            content_diversity = activity_data.get('content_diversity', 0.5)
+            score += (content_diversity - 0.5) * 0.2
+            
+            # Network size factor
+            network_size = activity_data.get('network_size', 0)
+            if network_size > 100:
+                score += 0.1
+            elif network_size < 5:
+                score -= 0.1
+            
+            # Engagement factor
+            engagement_rate = activity_data.get('engagement_rate', 0.5)
+            score += (engagement_rate - 0.5) * 0.3
+            
+            # Normalize score between 0 and 1
+            return max(0.0, min(1.0, score))
+            
+        except Exception as e:
+            logging.error(f"Error calculating behavioral score: {e}")
+            return 0.5
     
     async def assess_user_risk(self, activity_data: Dict[str, Any]) -> str:
-        """Assess user risk"""
-        return "low"
+        """Assess user risk level based on activity"""
+        try:
+            behavioral_score = activity_data.get('behavioral_score', 0.5)
+            suspicious_indicators = activity_data.get('suspicious_indicators', [])
+            
+            risk_score = behavioral_score
+            
+            # Adjust based on suspicious indicators
+            for indicator in suspicious_indicators:
+                if indicator in ['high_message_frequency', 'excessive_links', 'urgency_language']:
+                    risk_score += 0.1
+                elif indicator in ['unusual_timing', 'excessive_emoji']:
+                    risk_score += 0.05
+            
+            # Determine risk level
+            if risk_score > 0.8:
+                return "high"
+            elif risk_score > 0.6:
+                return "medium"
+            else:
+                return "low"
+                
+        except Exception as e:
+            logging.error(f"Error assessing user risk: {e}")
+            return "unknown"
     
     async def generate_threat_response(self, threat_data: Dict[str, Any]) -> List[str]:
         """Generate threat response recommendations"""
-        return []
+        try:
+            threat_level = threat_data.get('threat_level', 'low')
+            threat_type = threat_data.get('threat_type', 'unknown')
+            user_id = threat_data.get('user_id', '')
+            
+            recommendations = []
+            
+            if threat_level == "high":
+                recommendations.extend([
+                    "Immediate user account suspension",
+                    "Notify security team",
+                    "Preserve all evidence",
+                    "Block all network connections",
+                    "Initiate forensic analysis"
+                ])
+            elif threat_level == "medium":
+                recommendations.extend([
+                    "Enhanced monitoring",
+                    "Restrict user permissions",
+                    "Document suspicious activity",
+                    "Monitor network connections"
+                ])
+            else:
+                recommendations.extend([
+                    "Continue normal monitoring",
+                    "Log activity for future reference"
+                ])
+            
+            # Add specific recommendations based on threat type
+            if threat_type == "spam":
+                recommendations.append("Implement anti-spam filters")
+            elif threat_type == "phishing":
+                recommendations.append("Block malicious links")
+            elif threat_type == "bot":
+                recommendations.append("Verify user identity")
+            
+            return recommendations
+            
+        except Exception as e:
+            logging.error(f"Error generating threat response: {e}")
+            return ["Investigate further"]
     
     async def store_threat_alert(self, threat_analysis: Dict[str, Any]):
-        """Store threat alert"""
-        pass
+        """Store threat alert in database and cache"""
+        try:
+            alert_id = str(uuid.uuid4())
+            threat_analysis['alert_id'] = alert_id
+            threat_analysis['created_at'] = datetime.now().isoformat()
+            
+            # Store in Redis cache
+            await self.redis_client.setex(
+                f"threat_alert:{alert_id}",
+                3600,  # 1 hour TTL
+                json.dumps(threat_analysis)
+            )
+            
+            # Store in database
+            if hasattr(self, 'database'):
+                await self.database.store_threat_alert(threat_analysis)
+            
+            logging.info(f"Stored threat alert: {alert_id}")
+            
+        except Exception as e:
+            logging.error(f"Error storing threat alert: {e}")
     
     async def notify_security_team(self, threat_analysis: Dict[str, Any]):
-        """Notify security team"""
-        pass
+        """Notify security team of threat"""
+        try:
+            threat_level = threat_analysis.get('threat_level', 'low')
+            
+            # Only notify for medium and high threats
+            if threat_level in ['medium', 'high']:
+                notification = {
+                    'type': 'threat_alert',
+                    'threat_level': threat_level,
+                    'user_id': threat_analysis.get('user_id', ''),
+                    'timestamp': datetime.now().isoformat(),
+                    'recommendations': threat_analysis.get('recommendations', [])
+                }
+                
+                # Send to notification queue
+                await self.produce_message(
+                    StreamType.THREAT_ALERTS,
+                    notification
+                )
+                
+                logging.info(f"Notified security team of {threat_level} threat")
+                
+        except Exception as e:
+            logging.error(f"Error notifying security team: {e}")
     
     async def calculate_anomaly_score(self, behavior_data: Dict[str, Any]) -> float:
-        """Calculate anomaly score"""
-        return 0.0
+        """Calculate anomaly score for behavior data"""
+        try:
+            score = 0.0
+            
+            # Message frequency anomaly
+            current_frequency = behavior_data.get('message_frequency', 0)
+            baseline_frequency = behavior_data.get('baseline_frequency', 1)
+            
+            if current_frequency > baseline_frequency * 3:
+                score += 0.3
+            elif current_frequency < baseline_frequency * 0.1:
+                score += 0.2
+            
+            # Time pattern anomaly
+            unusual_timing = behavior_data.get('unusual_timing', False)
+            if unusual_timing:
+                score += 0.2
+            
+            # Content anomaly
+            content_anomaly = behavior_data.get('content_anomaly', False)
+            if content_anomaly:
+                score += 0.2
+            
+            # Network anomaly
+            network_anomaly = behavior_data.get('network_anomaly', False)
+            if network_anomaly:
+                score += 0.3
+            
+            return min(1.0, score)
+            
+        except Exception as e:
+            logging.error(f"Error calculating anomaly score: {e}")
+            return 0.0
     
     async def predict_behavior(self, behavior_data: Dict[str, Any]) -> str:
-        """Predict behavior"""
-        return "normal"
+        """Predict future behavior based on current patterns"""
+        try:
+            behavioral_score = behavior_data.get('behavioral_score', 0.5)
+            anomaly_score = behavior_data.get('anomaly_score', 0.0)
+            risk_level = behavior_data.get('risk_level', 'low')
+            
+            # Simple prediction logic
+            if anomaly_score > 0.7:
+                return "escalating_risk"
+            elif behavioral_score > 0.8:
+                return "high_activity"
+            elif behavioral_score < 0.3:
+                return "low_activity"
+            elif risk_level == "high":
+                return "threat_behavior"
+            else:
+                return "normal"
+                
+        except Exception as e:
+            logging.error(f"Error predicting behavior: {e}")
+            return "unknown"
     
     async def generate_behavior_recommendations(self, behavior_data: Dict[str, Any]) -> List[str]:
-        """Generate behavior recommendations"""
-        return []
+        """Generate behavior-based recommendations"""
+        try:
+            predictions = behavior_data.get('predictions', [])
+            risk_level = behavior_data.get('risk_level', 'low')
+            
+            recommendations = []
+            
+            for prediction in predictions:
+                if prediction == "escalating_risk":
+                    recommendations.extend([
+                        "Increase monitoring frequency",
+                        "Prepare incident response",
+                        "Document all activities"
+                    ])
+                elif prediction == "high_activity":
+                    recommendations.extend([
+                        "Monitor for fatigue",
+                        "Check for automation",
+                        "Verify user identity"
+                    ])
+                elif prediction == "threat_behavior":
+                    recommendations.extend([
+                        "Immediate investigation",
+                        "Restrict access",
+                        "Notify security team"
+                    ])
+            
+            if risk_level == "high":
+                recommendations.append("Consider account suspension")
+            
+            return list(set(recommendations))  # Remove duplicates
+            
+        except Exception as e:
+            logging.error(f"Error generating behavior recommendations: {e}")
+            return ["Continue monitoring"]
     
     async def update_behavior_model(self, behavior_analysis: Dict[str, Any]):
-        """Update behavior model"""
-        pass
+        """Update behavior model with new data"""
+        try:
+            user_id = behavior_analysis.get('user_id', '')
+            if not user_id:
+                return
+            
+            # Update user behavior cache
+            if user_id not in self.behavior_models:
+                self.behavior_models[user_id] = {
+                    'baseline_frequency': 0,
+                    'typical_timing': [],
+                    'content_patterns': [],
+                    'network_size': 0,
+                    'last_updated': datetime.now()
+                }
+            
+            model = self.behavior_models[user_id]
+            
+            # Update baseline frequency
+            current_frequency = behavior_analysis.get('message_frequency', 0)
+            if model['baseline_frequency'] == 0:
+                model['baseline_frequency'] = current_frequency
+            else:
+                # Exponential moving average
+                model['baseline_frequency'] = 0.9 * model['baseline_frequency'] + 0.1 * current_frequency
+            
+            # Update typical timing
+            timestamp = behavior_analysis.get('timestamp', datetime.now())
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp)
+            model['typical_timing'].append(timestamp.hour)
+            
+            # Keep only last 100 timing records
+            if len(model['typical_timing']) > 100:
+                model['typical_timing'] = model['typical_timing'][-100:]
+            
+            # Update content patterns
+            content_patterns = behavior_analysis.get('content_patterns', [])
+            model['content_patterns'].extend(content_patterns)
+            
+            # Keep only last 50 patterns
+            if len(model['content_patterns']) > 50:
+                model['content_patterns'] = model['content_patterns'][-50:]
+            
+            # Update network size
+            network_size = behavior_analysis.get('network_size', 0)
+            if network_size > model['network_size']:
+                model['network_size'] = network_size
+            
+            model['last_updated'] = datetime.now()
+            
+            logging.info(f"Updated behavior model for user: {user_id}")
+            
+        except Exception as e:
+            logging.error(f"Error updating behavior model: {e}")
     
     async def assess_network_impact(self, network_data: Dict[str, Any]) -> str:
-        """Assess network impact"""
-        return "low"
+        """Assess network impact of user activity"""
+        try:
+            user_id = network_data.get('user_id', '')
+            connection_count = network_data.get('connection_count', 0)
+            interaction_density = network_data.get('interaction_density', 0)
+            
+            # Calculate impact score
+            impact_score = 0.0
+            
+            # Connection count impact
+            if connection_count > 500:
+                impact_score += 0.4
+            elif connection_count > 100:
+                impact_score += 0.2
+            
+            # Interaction density impact
+            if interaction_density > 10:
+                impact_score += 0.3
+            elif interaction_density > 5:
+                impact_score += 0.1
+            
+            # Determine impact level
+            if impact_score > 0.6:
+                return "high"
+            elif impact_score > 0.3:
+                return "medium"
+            else:
+                return "low"
+                
+        except Exception as e:
+            logging.error(f"Error assessing network impact: {e}")
+            return "unknown"
     
     async def assess_security_implications(self, network_data: Dict[str, Any]) -> List[str]:
-        """Assess security implications"""
-        return []
+        """Assess security implications of network activity"""
+        try:
+            implications = []
+            
+            connection_count = network_data.get('connection_count', 0)
+            chat_count = network_data.get('chat_count', 0)
+            interaction_density = network_data.get('interaction_density', 0)
+            
+            # High connection count implications
+            if connection_count > 1000:
+                implications.extend([
+                    "Potential bot network",
+                    "High influence capability",
+                    "Difficult to monitor all connections"
+                ])
+            
+            # High chat count implications
+            if chat_count > 100:
+                implications.extend([
+                    "Multi-channel presence",
+                    "Potential cross-channel coordination",
+                    "Increased monitoring complexity"
+                ])
+            
+            # High interaction density implications
+            if interaction_density > 20:
+                implications.extend([
+                    "Potential automation",
+                    "High engagement manipulation",
+                    "Possible coordinated activity"
+                ])
+            
+            return implications
+            
+        except Exception as e:
+            logging.error(f"Error assessing security implications: {e}")
+            return ["Unknown implications"]
     
     async def update_network_graph(self, network_analysis: Dict[str, Any]):
-        """Update network graph"""
-        pass
+        """Update network graph with new analysis"""
+        try:
+            user_id = network_analysis.get('user_id', '')
+            connections = network_analysis.get('connections', [])
+            
+            if user_id not in self.network_graph:
+                self.network_graph[user_id] = {
+                    'connections': set(),
+                    'chats': set(),
+                    'interaction_count': 0,
+                    'last_seen': datetime.now()
+                }
+            
+            # Update connections
+            self.network_graph[user_id]['connections'].update(connections)
+            
+            # Update interaction count
+            self.network_graph[user_id]['interaction_count'] += 1
+            self.network_graph[user_id]['last_seen'] = datetime.now()
+            
+            logging.info(f"Updated network graph for user: {user_id}")
+            
+        except Exception as e:
+            logging.error(f"Error updating network graph: {e}")
     
     async def store_ai_insights(self, insights_data: Dict[str, Any]):
-        """Store AI insights"""
-        pass
+        """Store AI insights in database and cache"""
+        try:
+            insight_id = str(uuid.uuid4())
+            insights_data['insight_id'] = insight_id
+            insights_data['created_at'] = datetime.now().isoformat()
+            
+            # Store in Redis cache
+            await self.redis_client.setex(
+                f"ai_insight:{insight_id}",
+                7200,  # 2 hours TTL
+                json.dumps(insights_data)
+            )
+            
+            # Store in database
+            if hasattr(self, 'database'):
+                await self.database.store_ai_insight(insights_data)
+            
+            logging.info(f"Stored AI insight: {insight_id}")
+            
+        except Exception as e:
+            logging.error(f"Error storing AI insights: {e}")
     
     async def generate_insights_recommendations(self, insights_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate insights recommendations"""
-        return {}
+        """Generate insights-based recommendations"""
+        try:
+            insights_type = insights_data.get('type', 'general')
+            confidence = insights_data.get('confidence', 0.5)
+            data = insights_data.get('data', {})
+            
+            recommendations = {
+                'immediate_actions': [],
+                'monitoring_suggestions': [],
+                'investigation_areas': [],
+                'risk_mitigation': []
+            }
+            
+            # Generate recommendations based on insight type
+            if insights_type == 'behavior_anomaly':
+                if confidence > 0.8:
+                    recommendations['immediate_actions'].extend([
+                        "Investigate user immediately",
+                        "Increase monitoring frequency",
+                        "Document all activities"
+                    ])
+                else:
+                    recommendations['monitoring_suggestions'].extend([
+                        "Continue enhanced monitoring",
+                        "Track behavior patterns"
+                    ])
+            
+            elif insights_type == 'network_threat':
+                recommendations['immediate_actions'].extend([
+                    "Isolate affected users",
+                    "Notify security team",
+                    "Preserve evidence"
+                ])
+                recommendations['risk_mitigation'].extend([
+                    "Implement network segmentation",
+                    "Enhance access controls"
+                ])
+            
+            elif insights_type == 'content_analysis':
+                if data.get('suspicious_content', False):
+                    recommendations['investigation_areas'].extend([
+                        "Content source verification",
+                        "User identity confirmation",
+                        "Message pattern analysis"
+                    ])
+            
+            return recommendations
+            
+        except Exception as e:
+            logging.error(f"Error generating insights recommendations: {e}")
+            return {'error': str(e)}
     
     async def analyze_behavior_patterns(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Analyze behavior patterns"""
-        return {}
+        """Analyze behavior patterns from message data"""
+        try:
+            if not messages:
+                return {'error': 'No messages to analyze'}
+            
+            # Extract patterns
+            patterns = {
+                'message_frequency': len(messages),
+                'time_patterns': [],
+                'content_patterns': [],
+                'length_patterns': [],
+                'language_patterns': []
+            }
+            
+            for message in messages:
+                # Time patterns
+                timestamp = message.get('timestamp')
+                if timestamp:
+                    if isinstance(timestamp, str):
+                        timestamp = datetime.fromisoformat(timestamp)
+                    patterns['time_patterns'].append(timestamp.hour)
+                
+                # Content patterns
+                content = message.get('content', '')
+                patterns['content_patterns'].append(len(content))
+                
+                # Language patterns
+                if content:
+                    patterns['language_patterns'].extend(content.split())
+            
+            # Analyze patterns
+            analysis = {
+                'total_messages': len(messages),
+                'average_message_length': sum(patterns['content_patterns']) / len(patterns['content_patterns']) if patterns['content_patterns'] else 0,
+                'most_active_hour': max(set(patterns['time_patterns']), key=patterns['time_patterns'].count) if patterns['time_patterns'] else 0,
+                'unique_words': len(set(patterns['language_patterns'])),
+                'pattern_consistency': self.calculate_pattern_consistency(patterns)
+            }
+            
+            return analysis
+            
+        except Exception as e:
+            logging.error(f"Error analyzing behavior patterns: {e}")
+            return {'error': str(e)}
+    
+    def calculate_pattern_consistency(self, patterns: Dict[str, Any]) -> float:
+        """Calculate consistency score for behavior patterns"""
+        try:
+            if not patterns['time_patterns']:
+                return 0.0
+            
+            # Calculate time pattern consistency
+            time_consistency = 0.0
+            hour_counts = {}
+            for hour in patterns['time_patterns']:
+                hour_counts[hour] = hour_counts.get(hour, 0) + 1
+            
+            if hour_counts:
+                max_count = max(hour_counts.values())
+                total_count = sum(hour_counts.values())
+                time_consistency = max_count / total_count
+            
+            return time_consistency
+            
+        except Exception as e:
+            logging.error(f"Error calculating pattern consistency: {e}")
+            return 0.0
     
     async def detect_threats(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Detect threats"""
-        return []
+        """Detect threats from message data"""
+        try:
+            threats = []
+            
+            for message in messages:
+                content = message.get('content', '').lower()
+                user_id = message.get('user_id', '')
+                
+                # Check for threat indicators
+                threat_indicators = [
+                    'bomb', 'explosive', 'attack', 'kill', 'murder',
+                    'terrorist', 'hack', 'breach', 'steal', 'fraud'
+                ]
+                
+                for indicator in threat_indicators:
+                    if indicator in content:
+                        threats.append({
+                            'type': 'content_threat',
+                            'severity': 'high',
+                            'indicator': indicator,
+                            'user_id': user_id,
+                            'message_id': message.get('message_id', ''),
+                            'timestamp': message.get('timestamp', datetime.now().isoformat())
+                        })
+                
+                # Check for suspicious patterns
+                if len(content) > 1000 and content.count('http') > 5:
+                    threats.append({
+                        'type': 'spam_threat',
+                        'severity': 'medium',
+                        'indicator': 'excessive_links',
+                        'user_id': user_id,
+                        'message_id': message.get('message_id', ''),
+                        'timestamp': message.get('timestamp', datetime.now().isoformat())
+                    })
+            
+            return threats
+            
+        except Exception as e:
+            logging.error(f"Error detecting threats: {e}")
+            return []
     
     async def update_user_profile_realtime(self, activity: Dict[str, Any]):
         """Update user profile in real-time"""
-        pass
+        try:
+            user_id = activity.get('user_id', '')
+            if not user_id:
+                return
+            
+            # Initialize profile if not exists
+            if user_id not in self.user_profiles:
+                self.user_profiles[user_id] = {
+                    'total_messages': 0,
+                    'last_activity': datetime.now(),
+                    'behavioral_score': 0.5,
+                    'risk_level': 'low',
+                    'suspicious_indicators': []
+                }
+            
+            profile = self.user_profiles[user_id]
+            
+            # Update profile data
+            profile['total_messages'] += 1
+            profile['last_activity'] = datetime.now()
+            
+            # Update behavioral score
+            behavioral_score = activity.get('behavioral_score', 0.5)
+            profile['behavioral_score'] = 0.9 * profile['behavioral_score'] + 0.1 * behavioral_score
+            
+            # Update risk level
+            risk_level = activity.get('risk_level', 'low')
+            profile['risk_level'] = risk_level
+            
+            # Update suspicious indicators
+            new_indicators = activity.get('suspicious_indicators', [])
+            profile['suspicious_indicators'].extend(new_indicators)
+            profile['suspicious_indicators'] = list(set(profile['suspicious_indicators']))
+            
+            logging.info(f"Updated profile for user: {user_id}")
+            
+        except Exception as e:
+            logging.error(f"Error updating user profile: {e}")
     
     async def analyze_network_realtime(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze network in real-time"""
-        return {}
+        try:
+            analysis = {
+                'total_events': len(events),
+                'unique_users': set(),
+                'unique_chats': set(),
+                'event_types': {},
+                'timeline': []
+            }
+            
+            for event in events:
+                # Extract event data
+                user_id = event.get('user_id', '')
+                chat_id = event.get('chat_id', '')
+                event_type = event.get('type', 'unknown')
+                timestamp = event.get('timestamp', datetime.now().isoformat())
+                
+                # Update analysis
+                analysis['unique_users'].add(user_id)
+                analysis['unique_chats'].add(chat_id)
+                analysis['event_types'][event_type] = analysis['event_types'].get(event_type, 0) + 1
+                analysis['timeline'].append({
+                    'timestamp': timestamp,
+                    'user_id': user_id,
+                    'event_type': event_type
+                })
+            
+            # Convert sets to lists for JSON serialization
+            analysis['unique_users'] = list(analysis['unique_users'])
+            analysis['unique_chats'] = list(analysis['unique_chats'])
+            
+            # Sort timeline by timestamp
+            analysis['timeline'].sort(key=lambda x: x['timestamp'])
+            
+            return analysis
+            
+        except Exception as e:
+            logging.error(f"Error analyzing network realtime: {e}")
+            return {'error': str(e)}
     
     async def detect_anomalies(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Detect anomalies"""
-        return []
+        """Detect anomalies in data"""
+        try:
+            anomalies = []
+            
+            if not data:
+                return anomalies
+            
+            # Message frequency anomaly
+            message_counts = {}
+            for item in data:
+                user_id = item.get('user_id', '')
+                message_counts[user_id] = message_counts.get(user_id, 0) + 1
+            
+            # Find users with unusually high message counts
+            avg_messages = sum(message_counts.values()) / len(message_counts) if message_counts else 0
+            for user_id, count in message_counts.items():
+                if count > avg_messages * 3:  # 3x average
+                    anomalies.append({
+                        'type': 'message_frequency_anomaly',
+                        'user_id': user_id,
+                        'value': count,
+                        'threshold': avg_messages * 3,
+                        'severity': 'high'
+                    })
+            
+            # Time pattern anomaly
+            timestamps = [item.get('timestamp') for item in data if item.get('timestamp')]
+            if len(timestamps) > 10:
+                # Check for unusual time clustering
+                hour_counts = {}
+                for timestamp in timestamps:
+                    if isinstance(timestamp, str):
+                        timestamp = datetime.fromisoformat(timestamp)
+                    hour = timestamp.hour
+                    hour_counts[hour] = hour_counts.get(hour, 0) + 1
+                
+                max_hour_count = max(hour_counts.values()) if hour_counts else 0
+                total_count = sum(hour_counts.values())
+                
+                if max_hour_count > total_count * 0.7:  # 70% of messages in one hour
+                    anomalies.append({
+                        'type': 'time_clustering_anomaly',
+                        'peak_hour': max(hour_counts, key=hour_counts.get),
+                        'percentage': (max_hour_count / total_count) * 100,
+                        'severity': 'medium'
+                    })
+            
+            return anomalies
+            
+        except Exception as e:
+            logging.error(f"Error detecting anomalies: {e}")
+            return []
 
 async def main():
     """Example usage of RealTimeStreamingEngine"""
