@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-import sqlite3
+from database_manager import DatabaseManager
 import redis
 from collections import deque
 import threading
@@ -79,64 +79,31 @@ class IntelligentAIConversationSystem:
         self.ai_insights = {}
         self.is_running = False
         
-        self.db_connection = None
+        self.db_manager = None
         self.redis_client = None
         
-        self.initialize_database()
+        asyncio.create_task(self.initialize_database())
         self.initialize_question_templates()
         self.initialize_ai_providers()
     
-    def initialize_database(self):
+    async def initialize_database(self):
         """Initialize database for conversation storage"""
         try:
-            self.db_connection = sqlite3.connect('ai_conversations.db', check_same_thread=False)
-            self.redis_client = redis.Redis(host='localhost', port=6379, db=1)
+            # Initialize PostgreSQL database manager
+            self.db_manager = DatabaseManager(self.config.get('database', {}))
+            await self.db_manager.initialize()
             
-            cursor = self.db_connection.cursor()
+            # Initialize Redis client
+            self.redis_client = redis.Redis(
+                host=self.config.get('redis', {}).get('host', 'localhost'),
+                port=self.config.get('redis', {}).get('port', 6379),
+                db=self.config.get('redis', {}).get('db', 1)
+            )
             
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS conversations (
-                    id TEXT PRIMARY KEY,
-                    session_id TEXT,
-                    provider TEXT,
-                    conversation_type TEXT,
-                    question TEXT,
-                    response TEXT,
-                    context TEXT,
-                    timestamp TEXT,
-                    tab_id TEXT,
-                    message_number INTEGER
-                )
-            ''')
-            
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS ai_insights (
-                    id TEXT PRIMARY KEY,
-                    insight_type TEXT,
-                    content TEXT,
-                    confidence REAL,
-                    source_conversation TEXT,
-                    timestamp TEXT,
-                    metadata TEXT
-                )
-            ''')
-            
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS question_patterns (
-                    id TEXT PRIMARY KEY,
-                    pattern TEXT,
-                    success_rate REAL,
-                    response_quality REAL,
-                    usage_count INTEGER,
-                    last_used TEXT
-                )
-            ''')
-            
-            self.db_connection.commit()
-            logging.info("Database initialized for AI conversations")
+            logging.info("Database initialized successfully")
             
         except Exception as e:
-            logging.error(f"Database initialization error: {e}")
+            logging.error(f"Failed to initialize database: {e}")
             raise
     
     def initialize_question_templates(self):

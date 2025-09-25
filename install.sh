@@ -10,22 +10,11 @@ pip install -r requirements.txt
 
 mkdir -p data logs models cache temp
 
-python3 -c "
-import sqlite3
-conn = sqlite3.connect('ai_intelligence.db')
-cursor = conn.cursor()
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS system_status (
-        id INTEGER PRIMARY KEY,
-        component TEXT,
-        status TEXT,
-        last_update TEXT
-    )
-''')
-conn.commit()
-conn.close()
-print('Database setup completed')
-"
+echo "Installing PostgreSQL dependencies..."
+pip install asyncpg psycopg2-binary alembic
+
+echo "Note: PostgreSQL database setup will be handled by the application"
+echo "Please ensure PostgreSQL is installed and running before starting the system"
 
 echo "Setup completed successfully!"
 echo "To run the system:"

@@ -26,28 +26,32 @@ def create_directories():
         os.makedirs(directory, exist_ok=True)
         print(f"Created directory: {directory}")
 
-def setup_database():
+async def setup_database():
     try:
-        import sqlite3
-        conn = sqlite3.connect('ai_intelligence.db')
-        cursor = conn.cursor()
+        from database_manager import DatabaseManager
         
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS system_status (
-                id INTEGER PRIMARY KEY,
-                component TEXT,
-                status TEXT,
-                last_update TEXT
-            )
-        ''')
+        # Database configuration
+        db_config = {
+            'host': os.getenv('DATABASE_HOST', 'localhost'),
+            'port': int(os.getenv('DATABASE_PORT', 5432)),
+            'name': os.getenv('DATABASE_NAME', 'intelligence'),
+            'username': os.getenv('DATABASE_USER', 'intelligence'),
+            'password': os.getenv('DATABASE_PASSWORD', 'password'),
+            'max_connections': 100,
+            'connection_timeout': 30
+        }
         
-        conn.commit()
-        conn.close()
-        print("Database setup completed")
+        # Initialize database manager
+        db_manager = DatabaseManager({'database': db_config})
+        await db_manager.initialize()
+        
+        print("PostgreSQL database setup completed")
+        
     except Exception as e:
         print(f"Database setup failed: {e}")
+        print("Please ensure PostgreSQL is running and credentials are correct")
 
-def main():
+async def main():
     print("Setting up AI Intelligence System...")
     
     if not install_requirements():
@@ -55,10 +59,11 @@ def main():
         return
     
     create_directories()
-    setup_database()
+    await setup_database()
     
     print("Setup completed successfully!")
     print("Run 'python run_system.py' to start the system")
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())

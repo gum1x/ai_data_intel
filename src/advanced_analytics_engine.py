@@ -39,7 +39,7 @@ from enum import Enum
 import json
 import pickle
 import joblib
-import sqlite3
+from database_manager import DatabaseManager
 import redis
 from collections import defaultdict, Counter
 import warnings
@@ -87,25 +87,26 @@ class AdvancedAnalyticsEngine:
         self.analytics_cache = {}
         self.performance_metrics = {}
         
-        self.db_connection = None
+        self.db_manager = None
         self.redis_client = None
         
-        self.initialize_database()
+        asyncio.create_task(self.initialize_database())
         self.initialize_models()
         self.initialize_analytics()
     
-    def initialize_database(self):
+    async def initialize_database(self):
         """Initialize database connections"""
         try:
-            self.db_connection = sqlite3.connect('analytics.db', check_same_thread=False)
+            # Initialize PostgreSQL database manager
+            self.db_manager = DatabaseManager(self.config.get('database', {}))
+            await self.db_manager.initialize()
             
+            # Initialize Redis client
             self.redis_client = redis.Redis(
                 host=self.config.get('redis', {}).get('host', 'localhost'),
                 port=self.config.get('redis', {}).get('port', 6379),
                 db=self.config.get('redis', {}).get('db', 0)
             )
-            
-            self.create_analytics_tables()
             
             logging.info("Database connections initialized")
             
@@ -114,55 +115,9 @@ class AdvancedAnalyticsEngine:
             raise
     
     def create_analytics_tables(self):
-        """Create analytics database tables"""
-        try:
-            cursor = self.db_connection.cursor()
-            
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS analytics_results (
-                    id TEXT PRIMARY KEY,
-                    analytics_type TEXT,
-                    model_type TEXT,
-                    insights TEXT,
-                    predictions TEXT,
-                    confidence REAL,
-                    accuracy REAL,
-                    timestamp TEXT,
-                    metadata TEXT
-                )
-            ''')
-            
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS model_performance (
-                    id TEXT PRIMARY KEY,
-                    model_name TEXT,
-                    model_type TEXT,
-                    accuracy REAL,
-                    precision REAL,
-                    recall REAL,
-                    f1_score REAL,
-                    training_time REAL,
-                    prediction_time REAL,
-                    timestamp TEXT
-                )
-            ''')
-            
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS feature_importance (
-                    id TEXT PRIMARY KEY,
-                    model_name TEXT,
-                    feature_name TEXT,
-                    importance REAL,
-                    timestamp TEXT
-                )
-            ''')
-            
-            self.db_connection.commit()
-            logging.info("Analytics tables created")
-            
-        except Exception as e:
-            logging.error(f"Failed to create analytics tables: {e}")
-            raise
+        """Create analytics database tables (handled by DatabaseManager)"""
+        # Tables are now created by the DatabaseManager
+        pass
     
     def initialize_models(self):
         """Initialize machine learning models"""

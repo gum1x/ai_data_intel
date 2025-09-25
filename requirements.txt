@@ -37,6 +37,9 @@ redis>=4.0.2
 elasticsearch>=7.16.0
 cassandra-driver>=3.25.0
 sqlalchemy>=1.4.27
+asyncpg>=0.28.0
+psycopg2-binary>=2.9.0
+alembic>=1.8.0
 
 # Messaging and Streaming
 kafka-python>=2.0.2
