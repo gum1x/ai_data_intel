@@ -5,38 +5,44 @@ A production-ready, enterprise-grade intelligence platform built with Rust, feat
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Rust 1.75+
-- Docker & Docker Compose
-- 4+ CPU cores, 8GB+ RAM
-
-### 1. Environment Setup
+### 🆓 FREE Version (Zero Cost)
 ```bash
-# Copy environment template
-cp production.env .env
+# Copy FREE environment template
+cp free.env .env
 
-# Edit with your actual values
-nano .env
+# Start FREE system (no API keys needed!)
+chmod +x start-free.sh stop-free.sh
+./start-free.sh
 ```
 
-### 2. Start the System
+### 💰 Production Version (With Paid APIs)
 ```bash
-# Make scripts executable
-chmod +x start.sh stop.sh
+# Copy production environment template
+cp production.env .env
 
-# Start complete system
+# Edit with your actual API keys
+nano .env
+
+# Start production system
+chmod +x start.sh stop.sh
 ./start.sh
 ```
 
-### 3. Access Services
+### Prerequisites
+- Rust 1.75+
+- Docker & Docker Compose
+- 4+ CPU cores, 4GB+ RAM (FREE) / 8GB+ RAM (Production)
+
+### Access Services
 - **API**: http://localhost:8080
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
-- **Jaeger**: http://localhost:16686
+- **Ollama AI** (FREE): http://localhost:11434
 
 ## 📚 Documentation
 
-- **[Startup Guide](STARTUP_GUIDE.md)** - Complete setup and configuration
+- **[FREE Setup Guide](FREE_SETUP_GUIDE.md)** - Zero cost setup and configuration
+- **[Production Setup Guide](STARTUP_GUIDE.md)** - Complete setup with paid APIs
 - **[Rust System README](rust-intelligence-system/README.md)** - Technical documentation
 
 ## 🏗️ Architecture
@@ -67,11 +73,27 @@ GOOGLE_API_KEY=your_google_key
 
 ## 🛠️ Commands
 
+### FREE Version
 ```bash
-# Start system
+# Start FREE system
+./start-free.sh
+
+# Stop FREE system
+./stop-free.sh
+
+# Check status
+./start-free.sh status
+
+# Install Ollama AI
+./start-free.sh ollama
+```
+
+### Production Version
+```bash
+# Start production system
 ./start.sh
 
-# Stop system
+# Stop production system
 ./stop.sh
 
 # Check status
@@ -79,9 +101,6 @@ GOOGLE_API_KEY=your_google_key
 
 # Start only dependencies
 ./start.sh deps
-
-# Build only
-./start.sh build
 ```
 
 ## 🔒 Security
