@@ -17,7 +17,7 @@ services:
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - USE_LOCAL_MODELS=true
@@ -26,7 +26,6 @@ services:
       - SUPABASE_REALTIME_ENABLED=true
       - SUPABASE_STORAGE_ENABLED=true
     depends_on:
-      - redis
       - ollama
     volumes:
       - ./config:/app/config:ro
@@ -48,30 +47,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # Redis Cache (still needed for local caching)
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - intelligence-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
-        reservations:
-          memory: 64M
-          cpus: '0.05'
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 3s
-      retries: 5
 
   # Free Local AI Model Server
   ollama:
@@ -163,7 +138,6 @@ services:
   #   restart: unless-stopped
 
 volumes:
-  redis-data:
   ollama-data:
   prometheus-data:
   grafana-data:
