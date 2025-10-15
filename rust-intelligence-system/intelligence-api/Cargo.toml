@@ -8,27 +8,18 @@ name = "intelligence-api"
 path = "src/main.rs"
 
 [dependencies]
-tokio = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-uuid = { workspace = true }
-chrono = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-axum = { workspace = true }
-tower = { workspace = true }
-tower-http = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-
-intelligence-core = { path = "../intelligence-core" }
-intelligence-security = { path = "../intelligence-security" }
-intelligence-analytics = { path = "../intelligence-analytics" }
-intelligence-monitoring = { path = "../intelligence-monitoring" }
-intelligence-collectors = { path = "../intelligence-collectors" }
-
-clap = { workspace = true }
-config = { workspace = true }
-sqlx = { workspace = true }
-redis = { workspace = true }
-kafka = { workspace = true }
+tokio = { version = "1.35", features = ["full"] }
+axum = { version = "0.7", features = ["ws"] }
+tower-http = { version = "0.5", features = ["cors"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+redis = { version = "0.24", features = ["tokio-comp"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+dotenv = "0.15"
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+rand = "0.8"
