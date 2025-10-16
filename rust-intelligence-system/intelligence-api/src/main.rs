@@ -1,5 +1,5 @@
 use axum::{
-    extract::Query,
+    extract::State,
     response::Json,
     routing::get,
     Router,
@@ -123,7 +123,7 @@ async fn main() {
         .route("/api/chats", get(get_chats))
         .route("/api/messages", get(get_recent_messages))
         .route("/api/logs", get(get_logs))
-        .layer(CorsLayer::permissive())
+                .layer(CorsLayer::permissive())
         .with_state(state);
 
     // Run the server
@@ -164,13 +164,15 @@ async fn autonomous_telegram_monitor(state: Arc<AppState>) {
             *processed += 1;
         }
         
-        // Update database status
-        sqlx::query!(
-            "UPDATE telegram_status SET is_connected = true, last_connection = NOW(), messages_processed = messages_processed + 1, last_activity = NOW() WHERE id = (SELECT id FROM telegram_status LIMIT 1)"
+        // Update database status (runtime-checked SQL)
+        let _ = sqlx::query(
+            "UPDATE telegram_status \
+             SET is_connected = true, last_connection = NOW(), \
+                 messages_processed = messages_processed + 1, last_activity = NOW() \
+             WHERE id = (SELECT id FROM telegram_status LIMIT 1)"
         )
         .execute(&state.db_pool)
-        .await
-        .ok();
+            .await;
         
         // Sleep for 30 seconds before next check
         tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
@@ -183,18 +185,18 @@ async fn autonomous_message_analysis(state: Arc<AppState>) {
         log_activity(&state.db_pool, "message_analysis", "info", 
             "Analyzing message patterns and learning chat styles").await;
         
-        // Simulate analyzing messages and updating chat analysis
-        sqlx::query!(
-            "INSERT INTO chat_analysis (chat_id, chat_title, total_messages, analyzed_messages, common_words, average_message_length, emoji_usage_ratio, last_analyzed) 
-             VALUES (-1001234567890, 'AI Development Group', 1250, 200, $1, 45.2, 0.15, NOW())
-             ON CONFLICT (chat_id) DO UPDATE SET 
-             analyzed_messages = chat_analysis.analyzed_messages + 1,
-             last_analyzed = NOW()",
-            serde_json::json!({"AI": 45, "development": 32, "code": 28, "project": 25, "awesome": 20})
+        // Simulate analyzing messages and updating chat analysis (runtime-checked SQL)
+        let _ = sqlx::query(
+            "INSERT INTO chat_analysis \
+               (chat_id, chat_title, total_messages, analyzed_messages, common_words, average_message_length, emoji_usage_ratio, last_analyzed) \
+             VALUES (-1001234567890, 'AI Development Group', 1250, 200, $1, 45.2, 0.15, NOW()) \
+             ON CONFLICT (chat_id) DO UPDATE SET \
+               analyzed_messages = chat_analysis.analyzed_messages + 1, \
+               last_analyzed = NOW()"
         )
+        .bind(serde_json::json!({"AI": 45, "development": 32, "code": 28, "project": 25, "awesome": 20}))
         .execute(&state.db_pool)
-        .await
-        .ok();
+        .await;
         
         // Sleep for 60 seconds before next analysis
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
@@ -218,14 +220,13 @@ async fn autonomous_response_system(state: Arc<AppState>) {
         
         let random_response = responses[rand::random::<usize>() % responses.len()];
         
-        sqlx::query!(
-            "INSERT INTO auto_responses (chat_id, response_text, response_type, confidence_score) 
-             VALUES (-1001234567890, $1, 'style_based', 0.85)",
-            random_response
+        let _ = sqlx::query(
+            "INSERT INTO auto_responses (chat_id, response_text, response_type, confidence_score) \
+             VALUES (-1001234567890, $1, 'style_based', 0.85)"
         )
+        .bind(random_response)
         .execute(&state.db_pool)
-        .await
-        .ok();
+        .await;
         
         // Sleep for 120 seconds before next response
         tokio::time::sleep(tokio::time::Duration::from_secs(120)).await;
@@ -233,15 +234,14 @@ async fn autonomous_response_system(state: Arc<AppState>) {
 }
 
 async fn log_activity(pool: &PgPool, component: &str, level: &str, message: &str) {
-    sqlx::query!(
-        "INSERT INTO system_logs (log_level, component, message) VALUES ($1, $2, $3)",
-        level,
-        component,
-        message
+    let _ = sqlx::query(
+        "INSERT INTO system_logs (log_level, component, message) VALUES ($1, $2, $3)"
     )
+    .bind(level)
+    .bind(component)
+    .bind(message)
     .execute(pool)
-    .await
-    .ok();
+    .await;
 }
 
 async fn root() -> Json<ApiResponse> {
@@ -316,7 +316,7 @@ async fn api_status() -> Json<ApiResponse> {
     })
 }
 
-async fn get_stats(state: Arc<AppState>) -> Json<ApiResponse> {
+async fn get_stats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
     let connected = *state.telegram_connected.lock().await;
     let processed = *state.messages_processed.lock().await;
     let monitored = *state.chats_monitored.lock().await;
@@ -333,22 +333,36 @@ async fn get_stats(state: Arc<AppState>) -> Json<ApiResponse> {
     })
 }
 
-async fn get_chats(state: Arc<AppState>) -> Json<ApiResponse> {
-    let chats = sqlx::query_as!(
-        ChatAnalysis,
-        "SELECT chat_id, chat_title, total_messages, analyzed_messages, 
-         common_words as \"common_words: serde_json::Value\", 
-         average_message_length as \"average_length: f64\", 
-         emoji_usage_ratio as \"emoji_usage: f64\",
-         punctuation_patterns as \"punctuation_patterns: serde_json::Value\",
-         response_time_patterns as \"response_time_patterns: serde_json::Value\",
-         common_phrases as \"common_phrases: serde_json::Value\",
-         last_analyzed::text as last_analyzed
+async fn get_chats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    let rows = sqlx::query(
+        "SELECT chat_id, chat_title, total_messages, analyzed_messages, \
+                common_words, average_message_length, emoji_usage_ratio, \
+                punctuation_patterns, response_time_patterns, common_phrases, \
+                last_analyzed \
          FROM chat_analysis ORDER BY last_analyzed DESC LIMIT 10"
     )
     .fetch_all(&state.db_pool)
     .await
     .unwrap_or_default();
+
+    let chats: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "chat_id": row.get::<i64,_>("chat_id"),
+                "chat_title": row.get::<String,_>("chat_title"),
+                "total_messages": row.get::<i32,_>("total_messages"),
+                "analyzed_messages": row.get::<i32,_>("analyzed_messages"),
+                "common_words": row.get::<serde_json::Value,_>("common_words"),
+                "average_length": row.get::<f64,_>("average_message_length"),
+                "emoji_usage": row.get::<f64,_>("emoji_usage_ratio"),
+                "punctuation_patterns": row.get::<serde_json::Value,_>("punctuation_patterns"),
+                "response_time_patterns": row.get::<serde_json::Value,_>("response_time_patterns"),
+                "common_phrases": row.get::<serde_json::Value,_>("common_phrases"),
+                "last_analyzed": row.get::<chrono::DateTime<chrono::Utc>,_>("last_analyzed"),
+            })
+        })
+        .collect();
     
     Json(ApiResponse {
         message: "Active chats with analysis".to_string(),
@@ -356,16 +370,34 @@ async fn get_chats(state: Arc<AppState>) -> Json<ApiResponse> {
     })
 }
 
-async fn get_recent_messages(state: Arc<AppState>) -> Json<ApiResponse> {
-    let messages = sqlx::query_as!(
-        TelegramMessage,
-        "SELECT id, message_id, chat_id, user_id, username, first_name, last_name, 
-         message_text, message_date, message_type, is_bot
+async fn get_recent_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    let rows = sqlx::query(
+        "SELECT id, message_id, chat_id, user_id, username, first_name, last_name, \
+                message_text, message_date, message_type, is_bot \
          FROM messages ORDER BY message_date DESC LIMIT 20"
     )
     .fetch_all(&state.db_pool)
     .await
     .unwrap_or_default();
+
+    let messages: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "id": row.get::<Uuid,_>("id"),
+                "message_id": row.get::<i64,_>("message_id"),
+                "chat_id": row.get::<i64,_>("chat_id"),
+                "user_id": row.get::<Option<i64>,_>("user_id"),
+                "username": row.get::<Option<String>,_>("username"),
+                "first_name": row.get::<Option<String>,_>("first_name"),
+                "last_name": row.get::<Option<String>,_>("last_name"),
+                "message_text": row.get::<Option<String>,_>("message_text"),
+                "message_date": row.get::<chrono::DateTime<chrono::Utc>,_>("message_date"),
+                "message_type": row.get::<String,_>("message_type"),
+                "is_bot": row.get::<bool,_>("is_bot"),
+            })
+        })
+        .collect();
     
     Json(ApiResponse {
         message: "Recent messages".to_string(),
@@ -373,14 +405,26 @@ async fn get_recent_messages(state: Arc<AppState>) -> Json<ApiResponse> {
     })
 }
 
-async fn get_logs(state: Arc<AppState>) -> Json<ApiResponse> {
-    let logs = sqlx::query!(
-        "SELECT log_level, component, message, created_at 
+async fn get_logs(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    let rows = sqlx::query(
+        "SELECT log_level, component, message, created_at \
          FROM system_logs ORDER BY created_at DESC LIMIT 50"
     )
     .fetch_all(&state.db_pool)
     .await
     .unwrap_or_default();
+
+    let logs: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|row| {
+            serde_json::json!({
+                "log_level": row.get::<String,_>("log_level"),
+                "component": row.get::<String,_>("component"),
+                "message": row.get::<String,_>("message"),
+                "created_at": row.get::<chrono::DateTime<chrono::Utc>,_>("created_at"),
+            })
+        })
+        .collect();
     
     Json(ApiResponse {
         message: "System logs".to_string(),
