@@ -11,9 +11,24 @@ use tower_http::cors::CorsLayer;
 use std::env;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use sqlx::{PgPool, Row};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
+use reqwest::Client;
+
+// Ollama API structures
+#[derive(Serialize, Deserialize)]
+struct OllamaRequest {
+    model: String,
+    prompt: String,
+    stream: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct OllamaResponse {
+    model: String,
+    response: String,
+    done: bool,
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 struct ChatStyle {
@@ -35,7 +50,7 @@ struct ChatAnalysis {
     last_analyzed: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct TelegramMessage {
     id: Uuid,
     message_id: i64,
@@ -65,10 +80,12 @@ struct ApiResponse {
 
 // Global state for the autonomous system
 struct AppState {
-    db_pool: PgPool,
+    http_client: Client,
+    ollama_url: String,
     telegram_connected: Arc<Mutex<bool>>,
     messages_processed: Arc<Mutex<u64>>,
     chats_monitored: Arc<Mutex<u64>>,
+    sample_messages: Arc<Mutex<Vec<TelegramMessage>>>,
     is_running: Arc<Mutex<bool>>,
 }
 
@@ -80,26 +97,22 @@ async fn main() {
     // Load environment variables
     dotenv::dotenv().ok();
 
-    // Connect to Supabase database
-    let database_url = env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://postgres:PUbwY6pRqqp3RL/awMByqT9Rdpng8qPYxoD6+gnrweg=@db.eibtrlponekyrwbqcott.supabase.co:5432/postgres".to_string());
-    
-    let db_pool = PgPool::connect(&database_url).await
-        .expect("Failed to connect to database");
+    // Initialize HTTP client and Ollama URL
+    let http_client = Client::new();
+    let ollama_url = env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
+
+    // Create sample messages for testing
+    let sample_messages = create_sample_messages();
 
     // Initialize app state
     let state = Arc::new(AppState {
-        db_pool: db_pool.clone(),
+        http_client,
+        ollama_url,
         telegram_connected: Arc::new(Mutex::new(false)),
         messages_processed: Arc::new(Mutex::new(0)),
         chats_monitored: Arc::new(Mutex::new(0)),
+        sample_messages: Arc::new(Mutex::new(sample_messages)),
         is_running: Arc::new(Mutex::new(true)),
-    });
-
-    // Start autonomous Telegram monitoring
-    let state_clone = state.clone();
-    tokio::spawn(async move {
-        autonomous_telegram_monitor(state_clone).await;
     });
 
     // Start autonomous message analysis
@@ -114,6 +127,18 @@ async fn main() {
         autonomous_response_system(state_clone).await;
     });
 
+    // Setup graceful shutdown
+    let state_clone = state.clone();
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.expect("Failed to listen for ctrl+c");
+        println!("🛑 Shutting down gracefully...");
+        {
+            let mut is_running = state_clone.is_running.lock().await;
+            *is_running = false;
+        }
+        std::process::exit(0);
+    });
+
     // Build our application with routes
     let app = Router::new()
         .route("/", get(root))
@@ -122,8 +147,9 @@ async fn main() {
         .route("/api/stats", get(get_stats))
         .route("/api/chats", get(get_chats))
         .route("/api/messages", get(get_recent_messages))
-        .route("/api/logs", get(get_logs))
-                .layer(CorsLayer::permissive())
+        .route("/api/analyze", get(analyze_messages))
+        .route("/api/generate", get(generate_response))
+        .layer(CorsLayer::permissive())
         .with_state(state);
 
     // Run the server
@@ -133,70 +159,93 @@ async fn main() {
     println!("📈 Stats: http://0.0.0.0:8080/api/stats");
     println!("💬 Chats: http://0.0.0.0:8080/api/chats");
     println!("📝 Messages: http://0.0.0.0:8080/api/messages");
-    println!("📋 Logs: http://0.0.0.0:8080/api/logs");
+    println!("🔍 Analyze: http://0.0.0.0:8080/api/analyze");
+    println!("🤖 Generate: http://0.0.0.0:8080/api/generate");
     println!("");
     println!("🤖 AUTONOMOUS FEATURES:");
-    println!("  ✅ Telegram connection monitoring");
-    println!("  ✅ Automatic message analysis");
-    println!("  ✅ Style learning and pattern recognition");
-    println!("  ✅ Autonomous response generation");
-    println!("  ✅ Database logging and storage");
-    println!("  ✅ Real-time chat monitoring");
+    println!("  ✅ Real Ollama AI message analysis");
+    println!("  ✅ AI-powered style learning and pattern recognition");
+    println!("  ✅ Ollama-generated autonomous responses");
+    println!("  ✅ Sample messages loaded for testing");
+    println!("  ✅ Real-time AI processing");
     
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn autonomous_telegram_monitor(state: Arc<AppState>) {
-    loop {
-        // Log the monitoring activity
-        log_activity(&state.db_pool, "telegram_monitor", "info", 
-            "Monitoring Telegram connections and messages").await;
-        
-        // Simulate Telegram connection (in real implementation, this would use MTProto)
-        {
-            let mut connected = state.telegram_connected.lock().await;
-            *connected = true;
-        }
-        
-        // Simulate processing messages
-        {
-            let mut processed = state.messages_processed.lock().await;
-            *processed += 1;
-        }
-        
-        // Update database status (runtime-checked SQL)
-        let _ = sqlx::query(
-            "UPDATE telegram_status \
-             SET is_connected = true, last_connection = NOW(), \
-                 messages_processed = messages_processed + 1, last_activity = NOW() \
-             WHERE id = (SELECT id FROM telegram_status LIMIT 1)"
-        )
-        .execute(&state.db_pool)
-            .await;
-        
-        // Sleep for 30 seconds before next check
-        tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+fn create_sample_messages() -> Vec<TelegramMessage> {
+    let sample_texts = vec![
+        "Hey everyone! How's the project going?",
+        "Great! We're making good progress on the AI features",
+        "That's awesome! 🚀 What's the next milestone?",
+        "We should focus on the message analysis next",
+        "Sounds good! Let's build something cool together",
+        "I think we need to improve the response generation",
+        "Absolutely! The current system needs more intelligence",
+        "What do you think about using Ollama for this?",
+        "That's a brilliant idea! Ollama would be perfect",
+        "Let's implement it step by step and see what happens",
+    ];
+
+    let mut messages = Vec::new();
+    for (i, text) in sample_texts.iter().enumerate() {
+        messages.push(TelegramMessage {
+            id: Uuid::new_v4(),
+            message_id: i as i64,
+            chat_id: -1001234567890i64,
+            user_id: Some(i as i64),
+            username: Some(format!("user{}", i + 1)),
+            first_name: Some(format!("User{}", i + 1)),
+            last_name: None,
+            message_text: Some(text.to_string()),
+            message_date: Utc::now(),
+            message_type: "text".to_string(),
+            is_bot: false,
+        });
     }
+    messages
 }
 
 async fn autonomous_message_analysis(state: Arc<AppState>) {
     loop {
-        // Log analysis activity
-        log_activity(&state.db_pool, "message_analysis", "info", 
-            "Analyzing message patterns and learning chat styles").await;
+        // Check if system should still be running
+        {
+            let is_running = state.is_running.lock().await;
+            if !*is_running {
+                println!("🛑 Message analysis stopping...");
+                break;
+            }
+        }
         
-        // Simulate analyzing messages and updating chat analysis (runtime-checked SQL)
-        let _ = sqlx::query(
-            "INSERT INTO chat_analysis \
-               (chat_id, chat_title, total_messages, analyzed_messages, common_words, average_message_length, emoji_usage_ratio, last_analyzed) \
-             VALUES (-1001234567890, 'AI Development Group', 1250, 200, $1, 45.2, 0.15, NOW()) \
-             ON CONFLICT (chat_id) DO UPDATE SET \
-               analyzed_messages = chat_analysis.analyzed_messages + 1, \
-               last_analyzed = NOW()"
-        )
-        .bind(serde_json::json!({"AI": 45, "development": 32, "code": 28, "project": 25, "awesome": 20}))
-        .execute(&state.db_pool)
-        .await;
+        println!("🔍 Analyzing messages with Ollama AI...");
+        
+        // Get sample messages
+        let messages = {
+            let msgs = state.sample_messages.lock().await;
+            msgs.clone()
+        };
+        
+        if !messages.is_empty() {
+            // Analyze messages using Ollama
+            match analyze_messages_with_ollama(&state, &messages).await {
+                Ok(analysis) => {
+                    println!("✅ Analysis complete:");
+                    println!("   Chat ID: {}", analysis.chat_id);
+                    println!("   Messages analyzed: {}", analysis.analyzed_messages);
+                    println!("   Average length: {:.1}", analysis.style.average_length);
+                    println!("   Emoji usage: {:.2}", analysis.style.emoji_usage);
+                    println!("   Common words: {:?}", analysis.style.common_words);
+                    
+                    // Update counters
+                    {
+                        let mut processed = state.messages_processed.lock().await;
+                        *processed += analysis.analyzed_messages as u64;
+                    }
+                }
+                Err(e) => {
+                    println!("❌ Analysis failed: {}", e);
+                }
+            }
+        }
         
         // Sleep for 60 seconds before next analysis
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
@@ -205,62 +254,166 @@ async fn autonomous_message_analysis(state: Arc<AppState>) {
 
 async fn autonomous_response_system(state: Arc<AppState>) {
     loop {
-        // Log response system activity
-        log_activity(&state.db_pool, "response_system", "info", 
-            "Generating autonomous responses based on learned patterns").await;
+        // Check if system should still be running
+        {
+            let is_running = state.is_running.lock().await;
+            if !*is_running {
+                println!("🛑 Response system stopping...");
+                break;
+            }
+        }
         
-        // Simulate generating and logging auto responses
-        let responses = vec![
-            "That's awesome! Let's build something cool together! 🚀",
-            "I think we should definitely explore this further",
-            "What do you think about trying a different approach?",
-            "That's cool! I've been working on something similar",
-            "Let's build this step by step and see what happens"
-        ];
+        println!("🤖 Generating responses with Ollama AI...");
         
-        let random_response = responses[rand::random::<usize>() % responses.len()];
+        // Get sample messages
+        let messages = {
+            let msgs = state.sample_messages.lock().await;
+            msgs.clone()
+        };
         
-        let _ = sqlx::query(
-            "INSERT INTO auto_responses (chat_id, response_text, response_type, confidence_score) \
-             VALUES (-1001234567890, $1, 'style_based', 0.85)"
-        )
-        .bind(random_response)
-        .execute(&state.db_pool)
-        .await;
+        // Generate responses for recent messages
+        for message in messages.iter().take(3) {
+            if let Some(text) = &message.message_text {
+                match generate_response_with_ollama(&state, text).await {
+                    Ok(response) => {
+                        println!("💬 Generated response: {}", response);
+                    }
+                    Err(e) => {
+                        println!("❌ Response generation failed: {}", e);
+                    }
+                }
+            }
+        }
         
-        // Sleep for 120 seconds before next response
+        // Sleep for 120 seconds before next response cycle
         tokio::time::sleep(tokio::time::Duration::from_secs(120)).await;
     }
 }
 
-async fn log_activity(pool: &PgPool, component: &str, level: &str, message: &str) {
-    let _ = sqlx::query(
-        "INSERT INTO system_logs (log_level, component, message) VALUES ($1, $2, $3)"
-    )
-    .bind(level)
-    .bind(component)
-    .bind(message)
-    .execute(pool)
-    .await;
+async fn analyze_messages_with_ollama(state: &AppState, messages: &[TelegramMessage]) -> Result<ChatAnalysis, Box<dyn std::error::Error + Send + Sync>> {
+    // Combine all message texts for analysis
+    let combined_text = messages
+        .iter()
+        .filter_map(|m| m.message_text.as_ref())
+        .map(|s| s.as_str())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    if combined_text.is_empty() {
+        return Err("No text content to analyze".into());
+    }
+
+    // Create analysis prompt for Ollama
+    let prompt = format!(
+        "You are a JSON analysis tool. Analyze these chat messages and return ONLY a valid JSON object with these exact fields:
+        {{
+            \"common_words\": {{word: count}},
+            \"average_length\": number,
+            \"emoji_usage\": number,
+            \"punctuation_patterns\": {{pattern: count}},
+            \"common_phrases\": {{phrase: count}}
+        }}
+        
+        Messages: {}
+        
+        Return ONLY the JSON object, no other text:",
+        combined_text.chars().take(2000).collect::<String>() // Limit text length
+    );
+
+    // Call Ollama API
+    let ollama_request = OllamaRequest {
+        model: "llama3.2".to_string(),
+        prompt,
+        stream: false,
+    };
+
+    let response = state.http_client
+        .post(&format!("{}/api/generate", state.ollama_url))
+        .json(&ollama_request)
+        .send()
+        .await?;
+
+    let ollama_response: OllamaResponse = response.json().await?;
+    
+    // Parse the JSON response from Ollama
+    let analysis_data: serde_json::Value = serde_json::from_str(&ollama_response.response)?;
+    
+    // Extract chat info
+    let chat_id = messages.first().map(|m| m.chat_id).unwrap_or(-1);
+    let chat_title = format!("Chat {}", chat_id);
+    
+    // Build ChatStyle from Ollama response
+    let style = ChatStyle {
+        common_words: analysis_data["common_words"]
+            .as_object()
+            .map(|obj| obj.iter().map(|(k, v)| (k.clone(), v.as_u64().unwrap_or(0) as u32)).collect())
+            .unwrap_or_default(),
+        average_length: analysis_data["average_length"].as_f64().unwrap_or(0.0),
+        emoji_usage: analysis_data["emoji_usage"].as_f64().unwrap_or(0.0),
+        punctuation_patterns: analysis_data["punctuation_patterns"]
+            .as_object()
+            .map(|obj| obj.iter().map(|(k, v)| (k.clone(), v.as_u64().unwrap_or(0) as u32)).collect())
+            .unwrap_or_default(),
+        response_time_patterns: vec![], // Not implemented yet
+        common_phrases: analysis_data["common_phrases"]
+            .as_object()
+            .map(|obj| obj.iter().map(|(k, v)| (k.clone(), v.as_u64().unwrap_or(0) as u32)).collect())
+            .unwrap_or_default(),
+    };
+
+    Ok(ChatAnalysis {
+        chat_id,
+        chat_title,
+        total_messages: messages.len(),
+        analyzed_messages: messages.len(),
+        style,
+        last_analyzed: chrono::Utc::now().to_rfc3339(),
+    })
+}
+
+async fn generate_response_with_ollama(state: &AppState, message_text: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    // Create response prompt
+    let prompt = format!(
+        "You are a helpful assistant. Generate a natural, conversational response to this message. Keep it friendly and engaging, 1-2 sentences max.
+        
+        Original message: {}
+        
+        Response:",
+        message_text
+    );
+
+    // Call Ollama API
+    let ollama_request = OllamaRequest {
+        model: "llama3.2".to_string(),
+        prompt,
+        stream: false,
+    };
+
+    let response = state.http_client
+        .post(&format!("{}/api/generate", state.ollama_url))
+        .json(&ollama_request)
+        .send()
+        .await?;
+
+    let ollama_response: OllamaResponse = response.json().await?;
+    
+    Ok(ollama_response.response.trim().to_string())
 }
 
 async fn root() -> Json<ApiResponse> {
     Json(ApiResponse {
-        message: "AUTONOMOUS AI Intelligence System".to_string(),
+        message: "AUTONOMOUS AI Intelligence System with Ollama".to_string(),
         data: Some(serde_json::json!({
             "version": "3.0.0",
-            "mode": "autonomous",
+            "mode": "autonomous_ollama",
             "features": [
-                "Autonomous Telegram Monitoring",
-                "Real-time Message Analysis", 
-                "Style Learning & Pattern Recognition",
-                "Autonomous Response Generation",
-                "Database Logging & Storage",
-                "Supabase Integration",
-                "Redis Cloud Cache",
-                "Ollama AI Models"
+                "Real Ollama AI Message Analysis",
+                "AI-powered Style Learning", 
+                "Ollama-generated Responses",
+                "Sample Message Testing",
+                "Real-time AI Processing"
             ],
-            "status": "running_autonomously"
+            "status": "running_with_ollama"
         })),
     })
 }
@@ -268,24 +421,10 @@ async fn root() -> Json<ApiResponse> {
 async fn health() -> Json<HealthResponse> {
     let mut services = HashMap::new();
     
-    // Check Redis Cloud
-    match redis::Client::open("redis://default:nMeJnBpTATLVt2asHpl7s5ebtv3oC156@redis-12632.c257.us-east-1-3.ec2.redns.redis-cloud.com:12632") {
-        Ok(client) => {
-            match client.get_connection() {
-                Ok(_) => { services.insert("redis".to_string(), "connected".to_string()); },
-                Err(_) => { services.insert("redis".to_string(), "disconnected".to_string()); },
-            }
-        }
-        Err(_) => { services.insert("redis".to_string(), "error".to_string()); },
-    }
-    
-    // Check Supabase
-    services.insert("supabase".to_string(), "connected".to_string());
-    
     // Check Ollama
     services.insert("ollama".to_string(), "running".to_string());
     
-    // Check Telegram connection
+    // Check Telegram connection (simulated)
     services.insert("telegram".to_string(), "mtproto_autonomous".to_string());
     
     Json(HealthResponse {
@@ -297,21 +436,17 @@ async fn health() -> Json<HealthResponse> {
 
 async fn api_status() -> Json<ApiResponse> {
     Json(ApiResponse {
-        message: "Autonomous AI Intelligence System is running".to_string(),
+        message: "Autonomous AI Intelligence System with Ollama is running".to_string(),
         data: Some(serde_json::json!({
-            "environment": "autonomous_production",
-            "database": "supabase",
-            "cache": "redis-cloud",
-            "ai": "ollama",
-            "telegram": "mtproto_autonomous",
+            "environment": "autonomous_ollama",
+            "ai": "ollama_llama3.2",
             "autonomous_features": [
-                "telegram_monitoring",
-                "message_analysis",
-                "style_learning",
-                "auto_response",
-                "database_logging"
+                "ollama_message_analysis",
+                "ai_style_learning",
+                "ollama_response_generation",
+                "sample_message_testing"
             ],
-            "status": "fully_autonomous"
+            "status": "fully_autonomous_with_ollama"
         })),
     })
 }
@@ -320,6 +455,7 @@ async fn get_stats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
     let connected = *state.telegram_connected.lock().await;
     let processed = *state.messages_processed.lock().await;
     let monitored = *state.chats_monitored.lock().await;
+    let is_running = *state.is_running.lock().await;
     
     Json(ApiResponse {
         message: "System statistics".to_string(),
@@ -327,6 +463,7 @@ async fn get_stats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
             "telegram_connected": connected,
             "messages_processed": processed,
             "chats_monitored": monitored,
+            "is_running": is_running,
             "uptime": "running",
             "last_update": chrono::Utc::now().to_rfc3339()
         })),
@@ -334,100 +471,127 @@ async fn get_stats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
 }
 
 async fn get_chats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let rows = sqlx::query(
-        "SELECT chat_id, chat_title, total_messages, analyzed_messages, \
-                common_words, average_message_length, emoji_usage_ratio, \
-                punctuation_patterns, response_time_patterns, common_phrases, \
-                last_analyzed \
-         FROM chat_analysis ORDER BY last_analyzed DESC LIMIT 10"
-    )
-    .fetch_all(&state.db_pool)
-    .await
-    .unwrap_or_default();
-
-    let chats: Vec<serde_json::Value> = rows
-        .into_iter()
-        .map(|row| {
-            serde_json::json!({
-                "chat_id": row.get::<i64,_>("chat_id"),
-                "chat_title": row.get::<String,_>("chat_title"),
-                "total_messages": row.get::<i32,_>("total_messages"),
-                "analyzed_messages": row.get::<i32,_>("analyzed_messages"),
-                "common_words": row.get::<serde_json::Value,_>("common_words"),
-                "average_length": row.get::<f64,_>("average_message_length"),
-                "emoji_usage": row.get::<f64,_>("emoji_usage_ratio"),
-                "punctuation_patterns": row.get::<serde_json::Value,_>("punctuation_patterns"),
-                "response_time_patterns": row.get::<serde_json::Value,_>("response_time_patterns"),
-                "common_phrases": row.get::<serde_json::Value,_>("common_phrases"),
-                "last_analyzed": row.get::<chrono::DateTime<chrono::Utc>,_>("last_analyzed"),
-            })
-        })
-        .collect();
+    let messages = {
+        let msgs = state.sample_messages.lock().await;
+        msgs.clone()
+    };
+    
+    let chat_summary = serde_json::json!({
+        "chat_id": -1001234567890i64,
+        "chat_title": "AI Development Group",
+        "total_messages": messages.len(),
+        "last_analyzed": chrono::Utc::now().to_rfc3339(),
+        "status": "active"
+    });
     
     Json(ApiResponse {
         message: "Active chats with analysis".to_string(),
-        data: Some(serde_json::json!(chats)),
+        data: Some(serde_json::json!(vec![chat_summary])),
     })
 }
 
 async fn get_recent_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let rows = sqlx::query(
-        "SELECT id, message_id, chat_id, user_id, username, first_name, last_name, \
-                message_text, message_date, message_type, is_bot \
-         FROM messages ORDER BY message_date DESC LIMIT 20"
-    )
-    .fetch_all(&state.db_pool)
-    .await
-    .unwrap_or_default();
-
-    let messages: Vec<serde_json::Value> = rows
+    let messages = {
+        let msgs = state.sample_messages.lock().await;
+        msgs.clone()
+    };
+    
+    let message_data: Vec<serde_json::Value> = messages
         .into_iter()
-        .map(|row| {
+        .map(|msg| {
             serde_json::json!({
-                "id": row.get::<Uuid,_>("id"),
-                "message_id": row.get::<i64,_>("message_id"),
-                "chat_id": row.get::<i64,_>("chat_id"),
-                "user_id": row.get::<Option<i64>,_>("user_id"),
-                "username": row.get::<Option<String>,_>("username"),
-                "first_name": row.get::<Option<String>,_>("first_name"),
-                "last_name": row.get::<Option<String>,_>("last_name"),
-                "message_text": row.get::<Option<String>,_>("message_text"),
-                "message_date": row.get::<chrono::DateTime<chrono::Utc>,_>("message_date"),
-                "message_type": row.get::<String,_>("message_type"),
-                "is_bot": row.get::<bool,_>("is_bot"),
+                "id": msg.id,
+                "message_id": msg.message_id,
+                "chat_id": msg.chat_id,
+                "user_id": msg.user_id,
+                "username": msg.username,
+                "first_name": msg.first_name,
+                "message_text": msg.message_text,
+                "message_date": msg.message_date,
+                "message_type": msg.message_type,
+                "is_bot": msg.is_bot,
             })
         })
         .collect();
     
     Json(ApiResponse {
         message: "Recent messages".to_string(),
-        data: Some(serde_json::json!(messages)),
+        data: Some(serde_json::json!(message_data)),
     })
 }
 
-async fn get_logs(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let rows = sqlx::query(
-        "SELECT log_level, component, message, created_at \
-         FROM system_logs ORDER BY created_at DESC LIMIT 50"
-    )
-    .fetch_all(&state.db_pool)
-    .await
-    .unwrap_or_default();
-
-    let logs: Vec<serde_json::Value> = rows
-        .into_iter()
-        .map(|row| {
-            serde_json::json!({
-                "log_level": row.get::<String,_>("log_level"),
-                "component": row.get::<String,_>("component"),
-                "message": row.get::<String,_>("message"),
-                "created_at": row.get::<chrono::DateTime<chrono::Utc>,_>("created_at"),
-            })
-        })
-        .collect();
+async fn analyze_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    let messages = {
+        let msgs = state.sample_messages.lock().await;
+        msgs.clone()
+    };
     
-    Json(ApiResponse {
-        message: "System logs".to_string(),
-        data: Some(serde_json::json!(logs)),
-    })
+    match analyze_messages_with_ollama(&state, &messages).await {
+        Ok(analysis) => {
+            Json(ApiResponse {
+                message: "Message analysis complete".to_string(),
+                data: Some(serde_json::json!({
+                    "chat_id": analysis.chat_id,
+                    "chat_title": analysis.chat_title,
+                    "total_messages": analysis.total_messages,
+                    "analyzed_messages": analysis.analyzed_messages,
+                    "style": {
+                        "common_words": analysis.style.common_words,
+                        "average_length": analysis.style.average_length,
+                        "emoji_usage": analysis.style.emoji_usage,
+                        "punctuation_patterns": analysis.style.punctuation_patterns,
+                        "common_phrases": analysis.style.common_phrases,
+                    },
+                    "last_analyzed": analysis.last_analyzed
+                })),
+            })
+        }
+        Err(e) => {
+            Json(ApiResponse {
+                message: format!("Analysis failed: {}", e),
+                data: None,
+            })
+        }
+    }
+}
+
+async fn generate_response(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    let messages = {
+        let msgs = state.sample_messages.lock().await;
+        msgs.clone()
+    };
+    
+    if let Some(message) = messages.first() {
+        if let Some(text) = &message.message_text {
+            match generate_response_with_ollama(&state, text).await {
+                Ok(response) => {
+                    Json(ApiResponse {
+                        message: "Response generated".to_string(),
+                        data: Some(serde_json::json!({
+                            "original_message": text,
+                            "generated_response": response,
+                            "model": "llama3.2",
+                            "timestamp": chrono::Utc::now().to_rfc3339()
+                        })),
+                    })
+                }
+                Err(e) => {
+                    Json(ApiResponse {
+                        message: format!("Response generation failed: {}", e),
+                        data: None,
+                    })
+                }
+            }
+        } else {
+            Json(ApiResponse {
+                message: "No message text available".to_string(),
+                data: None,
+            })
+        }
+    } else {
+        Json(ApiResponse {
+            message: "No messages available".to_string(),
+            data: None,
+        })
+    }
 }
