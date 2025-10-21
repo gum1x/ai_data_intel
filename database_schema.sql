@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS messages (
     reply_to_message_id BIGINT,
     is_bot BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(message_id, chat_id)
 );
 
 -- Chat analysis table for storing learned patterns

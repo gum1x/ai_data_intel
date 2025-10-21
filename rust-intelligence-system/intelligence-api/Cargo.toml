@@ -24,3 +24,10 @@ sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chron
 uuid = { version = "1.6", features = ["v4", "serde"] }
 rand = "0.8"
 regex = "1.10"
+
+# Telegram MTProto integration
+grammers-client = "0.4"
+grammers-tl-types = "0.4"
+grammers-session = "0.4"
+tokio-tungstenite = "0.21"
+futures = "0.3"
