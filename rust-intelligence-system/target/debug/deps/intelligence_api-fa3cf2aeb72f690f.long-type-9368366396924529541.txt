@@ -1,0 +1,1 @@
+std::result::Result<std::option::Option<grammers_client::types::Dialog>, InvocationError>

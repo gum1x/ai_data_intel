@@ -1,13 +1,15 @@
 use axum::{
-    extract::State,
-    response::Json,
-    routing::get,
+    extract::{State, Path},
+    response::{Json, Html},
+    routing::{get, post, delete},
     Router,
 };
+use tower_http::services::ServeDir;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
+use std::io::{self, Write};
 use std::env;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -19,8 +21,6 @@ use sqlx::Row;
 // Telegram MTProto imports
 use grammers_client::{Client as TelegramClient, Config};
 use grammers_session::Session;
-use grammers_tl_types as tl;
-use futures::StreamExt;
 
 // Ollama API structures
 #[derive(Serialize, Deserialize)]
@@ -238,7 +238,7 @@ async fn main() {
 
     // Try to connect to database
     let db_pool = match env::var("DATABASE_URL") {
-        Ok(database_url) => {
+        Ok(ref database_url) => {
             match sqlx::PgPool::connect(&database_url).await {
                 Ok(pool) => {
                     println!("✅ Connected to database");
@@ -301,22 +301,24 @@ async fn main() {
         std::process::exit(0);
     });
 
-    // Build our application with routes
     let app = Router::new()
         .route("/", get(root))
+        .route("/panel", get(web_panel))
         .route("/health", get(health))
         .route("/api/status", get(api_status))
         .route("/api/stats", get(get_stats))
-        .route("/api/chats", get(get_chats))
+        .route("/api/chats", get(get_chats).post(add_chat))
+        .route("/api/chats/:chat_id", delete(remove_chat))
         .route("/api/messages", get(get_recent_messages))
         .route("/api/analyze", get(analyze_messages))
         .route("/api/generate", get(generate_response))
-                .layer(CorsLayer::permissive())
+        .nest_service("/public", ServeDir::new("intelligence-api/public"))
+        .layer(CorsLayer::permissive())
         .with_state(state);
 
-    // Run the server
     let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
-    println!("🚀 AUTONOMOUS AI Intelligence System starting...");
+    println!(" AUTONOMOUS AI Intelligence System starting...");
+    println!("🌐 Web Panel: http://0.0.0.0:8080/panel");
     println!("📊 Health check: http://0.0.0.0:8080/health");
     println!("📈 Stats: http://0.0.0.0:8080/api/stats");
     println!("💬 Chats: http://0.0.0.0:8080/api/chats");
@@ -336,39 +338,6 @@ async fn main() {
     println!("  ✅ Real-time AI processing");
     
     axum::serve(listener, app).await.unwrap();
-}
-
-fn create_sample_messages() -> Vec<TelegramMessage> {
-    let sample_texts = vec![
-        "Hey everyone! How's the project going?",
-        "Great! We're making good progress on the AI features",
-        "That's awesome! 🚀 What's the next milestone?",
-        "We should focus on the message analysis next",
-        "Sounds good! Let's build something cool together",
-        "I think we need to improve the response generation",
-        "Absolutely! The current system needs more intelligence",
-        "What do you think about using Ollama for this?",
-        "That's a brilliant idea! Ollama would be perfect",
-        "Let's implement it step by step and see what happens",
-    ];
-
-    let mut messages = Vec::new();
-    for (i, text) in sample_texts.iter().enumerate() {
-        messages.push(TelegramMessage {
-            id: Uuid::new_v4(),
-            message_id: i as i64,
-            chat_id: -1001234567890i64,
-            user_id: Some(i as i64),
-            username: Some(format!("user{}", i + 1)),
-            first_name: Some(format!("User{}", i + 1)),
-            last_name: None,
-            message_text: Some(text.to_string()),
-            message_date: Utc::now(),
-            message_type: "text".to_string(),
-            is_bot: false,
-        });
-    }
-    messages
 }
 
 async fn autonomous_message_analysis(state: Arc<AppState>) {
@@ -465,8 +434,8 @@ async fn autonomous_message_analysis(state: Arc<AppState>) {
                             let start_time = std::time::Instant::now();
                             
                             // Extract person intelligence
-                            match analyze_person_intelligence(&state, message).await {
-                                Ok(intelligence_data) => {
+                                match analyze_person_intelligence(&state, message).await {
+                                    Ok(intelligence_data) => {
                                     let processing_time = start_time.elapsed().as_millis() as i32;
                                     
                                     for intelligence in intelligence_data {
@@ -797,7 +766,7 @@ async fn analyze_person_intelligence(state: &AppState, message: &TelegramMessage
     Ok(intelligence_data)
 }
 
-async fn extract_personal_info(state: &AppState, text: &str, user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
+async fn extract_personal_info(state: &AppState, text: &str, _user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
     let prompt = format!(
         "Extract personal information from this message. Look for:
         - Full name, nickname, or aliases
@@ -835,7 +804,7 @@ async fn extract_personal_info(state: &AppState, text: &str, user_id: i64) -> Re
     Ok(personal_info)
 }
 
-async fn extract_social_connections(state: &AppState, text: &str, user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
+async fn extract_social_connections(state: &AppState, text: &str, _user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
     let prompt = format!(
         "Extract social connections and relationships from this message. Look for:
         - Mentions of friends, family, colleagues
@@ -871,7 +840,7 @@ async fn extract_social_connections(state: &AppState, text: &str, user_id: i64) 
     Ok(social_info)
 }
 
-async fn extract_interests_goals(state: &AppState, text: &str, user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
+async fn extract_interests_goals(state: &AppState, text: &str, _user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
     let prompt = format!(
         "Extract interests, goals, and aspirations from this message. Look for:
         - Hobbies, interests, passions
@@ -908,7 +877,7 @@ async fn extract_interests_goals(state: &AppState, text: &str, user_id: i64) -> 
     Ok(interests)
 }
 
-async fn extract_vulnerabilities(state: &AppState, text: &str, user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
+async fn extract_vulnerabilities(state: &AppState, text: &str, _user_id: i64) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
     let prompt = format!(
         "Extract vulnerabilities, weaknesses, and sensitive information from this message. Look for:
         - Personal problems, struggles
@@ -1055,7 +1024,7 @@ async fn send_telegram_reply(
     text: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let client_opt = state.telegram_client.lock().await.clone();
-    if let Some(client) = client_opt {
+    if let Some(_client) = client_opt {
         // Note: grammers send message API - simplified for now
         // For now, we'll just log that we would send a message
         println!("📤 Would send message to chat {}: \"{}\"", chat_id, text);
@@ -1111,9 +1080,12 @@ async fn fetch_recent_messages_from_db(state: &AppState, limit: i64) -> Result<V
             Ok(messages)
         }
         None => {
-            // Fallback to sample messages if no database
-            println!("⚠️  No database connection, using sample messages");
-            Ok(create_sample_messages())
+            println!("⚠️  No database connection");
+            println!("🔧 To get real messages:");
+            println!("   1. Set DATABASE_URL environment variable");
+            println!("   2. Set Telegram credentials (TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE)");
+            println!("   3. Add chats to monitored_chats table");
+            Ok(vec![])
         }
     }
 }
@@ -1154,17 +1126,7 @@ async fn get_monitored_chats(state: &AppState) -> Result<Vec<MonitoredChat>, Box
             Ok(chats)
         }
         None => {
-            // Return default chat for testing
-            Ok(vec![MonitoredChat {
-                chat_id: -1001234567890,
-                chat_title: Some("Test Chat".to_string()),
-                chat_type: Some("group".to_string()),
-                is_active: true,
-                auto_analyze: true,
-                auto_respond: false,
-                analysis_frequency: 60,
-                last_analyzed: None,
-            }])
+            Ok(vec![])
         }
     }
 }
@@ -1207,8 +1169,7 @@ async fn fetch_unanalyzed_messages(state: &AppState, chat_id: i64) -> Result<Vec
             Ok(messages)
         }
         None => {
-            // Fallback to sample messages
-            Ok(create_sample_messages())
+            Ok(vec![])
         }
     }
 }
@@ -1340,17 +1301,44 @@ async fn fetch_user_info_from_telegram(
 
     println!("🔍 Fetching user info for user ID: {}", user_id);
 
-    // Fetch user info from Telegram
-    // Note: get_users method may not be available in grammers 0.4
-    // For now, we'll return basic info and log that we need the user
-    println!("⚠️  User info fetching not fully implemented in grammers 0.4");
-    let user_info = UserInfo {
-        user_id,
-        username: None,
-        first_name: None,
-        last_name: None,
-        is_bot: false,
-        last_fetched: chrono::Utc::now(),
+    // Fetch user info from Telegram using get_me or other available methods
+    // Note: We'll try to get user info, but grammers 0.4 may have limited user fetching
+    let user_info = match client.get_me().await {
+        Ok(me) => {
+            // If the requested user is the current user, use that info
+            if me.id() == user_id {
+                UserInfo {
+                    user_id,
+                    username: me.username().map(|s| s.to_string()),
+                    first_name: Some(me.first_name().to_string()),
+                    last_name: me.last_name().map(|s| s.to_string()),
+                    is_bot: me.is_bot(),
+                    last_fetched: chrono::Utc::now(),
+                }
+            } else {
+                // For other users, we'll need to use a different approach
+                // For now, return basic info
+                UserInfo {
+                    user_id,
+                    username: None,
+                    first_name: None,
+                    last_name: None,
+                    is_bot: false,
+                    last_fetched: chrono::Utc::now(),
+                }
+            }
+        }
+        Err(e) => {
+            println!("❌ Failed to get user info for {}: {}", user_id, e);
+            UserInfo {
+                user_id,
+                username: None,
+                first_name: None,
+                last_name: None,
+                is_bot: false,
+                last_fetched: chrono::Utc::now(),
+            }
+        }
     };
 
     // Cache the result
@@ -1452,6 +1440,281 @@ async fn save_telegram_message_to_db(state: &AppState, msg_data: &TelegramMessag
     Ok(())
 }
 
+#[derive(Debug, Clone)]
+struct DiscoveredChat {
+    chat_id: i64,
+    title: String,
+    chat_type: String,
+    last_message_date: Option<DateTime<Utc>>,
+    member_count: Option<i32>,
+    is_active: bool,
+}
+
+async fn read_user_input(prompt: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    print!("{}", prompt);
+    io::stdout().flush()?;
+    
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    
+    Ok(input.trim().to_lowercase())
+}
+
+async fn discover_and_configure_chats(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!("🔍 Chat Discovery & Configuration");
+    println!("Note: Due to grammers-client API limitations, we'll use a simplified approach.");
+    println!("You can manually add chats to the monitored_chats table in your database.");
+    
+    // For now, let's show a simple interactive prompt for manual chat configuration
+    println!("\n🤖 AI Intelligence System - Manual Chat Configuration");
+    println!("To add chats for monitoring, you can:");
+    println!("1. Use the SQL scripts provided (configure_monitored_chats.sql)");
+    println!("2. Add chats directly to the database");
+    println!("3. Use the API endpoints");
+    
+    println!("\n📋 Current monitored chats:");
+    match &state.db_pool {
+        Some(pool) => {
+            let rows = sqlx::query("SELECT chat_id, chat_title, chat_type, is_active FROM monitored_chats ORDER BY created_at DESC")
+                .fetch_all(pool)
+                .await?;
+            
+            if rows.is_empty() {
+                println!("   No chats currently monitored");
+            } else {
+                for row in rows {
+                    let chat_id: i64 = row.get("chat_id");
+                    let chat_title: Option<String> = row.get("chat_title");
+                    let chat_type: Option<String> = row.get("chat_type");
+                    let is_active: bool = row.get("is_active");
+                    
+                    println!("   📱 {} ({}) - ID: {} - Active: {}", 
+                        chat_title.unwrap_or("Unknown".to_string()),
+                        chat_type.unwrap_or("unknown".to_string()),
+                        chat_id,
+                        if is_active { "✅" } else { "❌" }
+                    );
+                }
+            }
+        }
+        None => {
+            println!("   ⚠️  No database connection available");
+        }
+    }
+    
+    println!("\n💡 To add a new chat:");
+    println!("   INSERT INTO monitored_chats (chat_id, chat_title, chat_type, is_active, auto_analyze, auto_respond, analysis_frequency)");
+    println!("   VALUES (-1001234567890, 'My Group', 'group', true, true, true, 60);");
+    
+    Ok(())
+}
+
+async fn get_chats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    match fetch_recent_messages_from_db(&state, 1000).await {
+        Ok(messages) => {
+            let mut chat_map: HashMap<i64, (Vec<String>, usize)> = HashMap::new();
+            for msg in &messages {
+                let chat_id = msg.chat_id;
+                let title = msg.chat_id.to_string();
+                let entry = chat_map.entry(chat_id).or_insert((vec![title], 0));
+                entry.1 += 1;
+            }
+            
+            let chat_summaries: Vec<serde_json::Value> = chat_map
+                .into_iter()
+                .map(|(chat_id, (_, count))| {
+                    serde_json::json!({
+                        "chat_id": chat_id,
+                        "total_messages": count,
+                        "last_updated": chrono::Utc::now().to_rfc3339(),
+                    })
+                })
+                .collect();
+            
+            Json(ApiResponse {
+                message: "Active chats".to_string(),
+                data: Some(serde_json::json!(chat_summaries)),
+            })
+        }
+        Err(e) => {
+            Json(ApiResponse {
+                message: format!("Failed to fetch chats: {}", e),
+                data: Some(serde_json::json!([])),
+            })
+        }
+    }
+}
+
+async fn get_recent_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    match fetch_recent_messages_from_db(&state, 100).await {
+        Ok(messages) => {
+            let message_data: Vec<serde_json::Value> = messages
+                .into_iter()
+                .map(|msg| {
+                    serde_json::json!({
+                        "id": msg.id,
+                        "message_id": msg.message_id,
+                        "chat_id": msg.chat_id,
+                        "user_id": msg.user_id,
+                        "username": msg.username,
+                        "first_name": msg.first_name,
+                        "message_text": msg.message_text,
+                        "message_date": msg.message_date,
+                        "message_type": msg.message_type,
+                        "is_bot": msg.is_bot,
+                    })
+                })
+                .collect();
+            
+            Json(ApiResponse {
+                message: "Recent messages".to_string(),
+                data: Some(serde_json::json!(message_data)),
+            })
+        }
+        Err(e) => {
+            Json(ApiResponse {
+                message: format!("Failed to fetch messages: {}", e),
+                data: Some(serde_json::json!([])),
+            })
+        }
+    }
+}
+
+async fn analyze_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    match fetch_recent_messages_from_db(&state, 50).await {
+        Ok(messages) if !messages.is_empty() => {
+            match analyze_messages_with_ollama(&state, &messages).await {
+                Ok(analysis) => {
+                    Json(ApiResponse {
+                        message: "Message analysis complete".to_string(),
+                        data: Some(serde_json::json!({
+                            "chat_id": analysis.chat_id,
+                            "chat_title": analysis.chat_title,
+                            "total_messages": analysis.total_messages,
+                            "analyzed_messages": analysis.analyzed_messages,
+                            "style": {
+                                "common_words": analysis.style.common_words,
+                                "average_length": analysis.style.average_length,
+                                "emoji_usage": analysis.style.emoji_usage,
+                                "punctuation_patterns": analysis.style.punctuation_patterns,
+                                "common_phrases": analysis.style.common_phrases,
+                            },
+                            "last_analyzed": analysis.last_analyzed
+                        })),
+                    })
+                }
+                Err(e) => {
+                    Json(ApiResponse {
+                        message: format!("Analysis failed: {}", e),
+                        data: None,
+                    })
+                }
+            }
+        }
+        Ok(_) => {
+            Json(ApiResponse {
+                message: "No messages available to analyze".to_string(),
+                data: None,
+            })
+        }
+        Err(e) => {
+            Json(ApiResponse {
+                message: format!("Failed to fetch messages: {}", e),
+                data: None,
+            })
+        }
+    }
+}
+
+async fn generate_response(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
+    match fetch_recent_messages_from_db(&state, 1).await {
+        Ok(messages) if !messages.is_empty() => {
+            if let Some(message) = messages.first() {
+                if let Some(text) = &message.message_text {
+                    match generate_response_with_ollama(&state, text).await {
+                        Ok(response) => {
+                            Json(ApiResponse {
+                                message: "Response generated".to_string(),
+                                data: Some(serde_json::json!({
+                                    "original_message": text,
+                                    "generated_response": response,
+                                    "model": "llama3.2",
+                                    "timestamp": chrono::Utc::now().to_rfc3339()
+                                })),
+                            })
+                        }
+                        Err(e) => {
+                            Json(ApiResponse {
+                                message: format!("Response generation failed: {}", e),
+                                data: None,
+                            })
+                        }
+                    }
+                } else {
+                    Json(ApiResponse {
+                        message: "No message text available".to_string(),
+                        data: None,
+                    })
+                }
+            } else {
+                Json(ApiResponse {
+                    message: "No messages available".to_string(),
+                    data: None,
+                })
+            }
+        }
+        _ => {
+            Json(ApiResponse {
+                message: "No messages available to generate response".to_string(),
+                data: None,
+            })
+        }
+    }
+}
+
+async fn fetch_recent_chat_messages(
+    state: &AppState,
+    chat_id: i64,
+    limit: i64,
+) -> Result<Vec<TelegramMessage>, Box<dyn std::error::Error + Send + Sync>> {
+    match &state.db_pool {
+        Some(pool) => {
+            let rows = sqlx::query(
+                "SELECT id, message_id, chat_id, user_id, username, first_name, last_name,
+                        message_text, message_date, message_type, is_bot
+                 FROM messages
+                 WHERE chat_id = $1 AND message_text IS NOT NULL
+                 ORDER BY message_date DESC
+                 LIMIT $2"
+            )
+            .bind(chat_id)
+            .bind(limit)
+            .fetch_all(pool)
+            .await?;
+
+            let mut messages = Vec::new();
+            for row in rows {
+                messages.push(TelegramMessage {
+                    id: row.get("id"),
+                    message_id: row.get("message_id"),
+                    chat_id: row.get("chat_id"),
+                    user_id: row.get("user_id"),
+                    username: row.get("username"),
+                    first_name: row.get("first_name"),
+                    last_name: row.get("last_name"),
+                    message_text: row.get("message_text"),
+                    message_date: row.get("message_date"),
+                    message_type: row.get("message_type"),
+                    is_bot: row.get("is_bot"),
+                });
+            }
+            messages.reverse();
+            Ok(messages)
+        }
+        None => Ok(vec![]),
+    }
+}
+
 async fn backfill_user_info_for_existing_messages(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match &state.db_pool {
         Some(pool) => {
@@ -1516,13 +1779,37 @@ async fn backfill_user_info_for_existing_messages(state: &AppState) -> Result<()
 async fn telegram_message_ingestion(state: Arc<AppState>) {
     println!("📡 Starting Telegram message ingestion...");
     
-    // Initialize Telegram client
-    if let Err(e) = initialize_telegram_client(&state).await {
-        println!("❌ Failed to initialize Telegram client: {}", e);
-        return;
+    // Retry logic for connection
+    let mut retry_count = 0;
+    const MAX_RETRIES: u32 = 5;
+    
+    loop {
+        // Initialize Telegram client
+        match initialize_telegram_client(&state).await {
+            Ok(_) => {
+                println!("✅ Telegram client initialized successfully");
+                retry_count = 0; // Reset retry count on success
+                break;
+            }
+            Err(e) => {
+                retry_count += 1;
+                println!("❌ Failed to initialize Telegram client (attempt {}): {}", retry_count, e);
+                
+                if retry_count >= MAX_RETRIES {
+                    println!("❌ Max retries reached, giving up on Telegram connection");
+                    return;
+                }
+                
+                println!("🔄 Retrying in 30 seconds...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+            }
+        }
     }
 
-    // Backfill user info for existing messages
+    if let Err(e) = discover_and_configure_chats(&state).await {
+        println!("⚠️  Failed to discover chats: {}", e);
+    }
+
     if let Err(e) = backfill_user_info_for_existing_messages(&state).await {
         println!("⚠️  Failed to backfill user info: {}", e);
     }
@@ -1540,7 +1827,6 @@ async fn telegram_message_ingestion(state: Arc<AppState>) {
         }
     };
 
-    // Get monitored chats
     let monitored_chats = match get_monitored_chats(&state).await {
         Ok(chats) => chats,
         Err(e) => {
@@ -1552,10 +1838,7 @@ async fn telegram_message_ingestion(state: Arc<AppState>) {
     let monitored_chat_ids: Vec<i64> = monitored_chats.iter().map(|c| c.chat_id).collect();
     println!("📊 Monitoring {} chats: {:?}", monitored_chat_ids.len(), monitored_chat_ids);
 
-    // Note: iter_updates() method may not be available in grammers 0.4
-    // For now, we'll use a polling approach
     loop {
-        // Check if system should still be running
         {
             let is_running = state.is_running.lock().await;
             if !*is_running {
@@ -1564,35 +1847,102 @@ async fn telegram_message_ingestion(state: Arc<AppState>) {
             }
         }
 
-        // Poll for updates (simplified approach)
-        // Note: get_updates method may not be available in grammers 0.4
-        // For now, we'll use a placeholder approach
-        println!("⚠️  Telegram update polling not fully implemented in grammers 0.4");
-        tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+        // Get updates from Telegram with reconnection logic
+        // Note: Using next_update() which returns a single update
+        match client.next_update().await {
+            Ok(update) => {
+                println!("📨 Received update from Telegram");
+                // Handle new message updates
+                if let Some(update) = update {
+                    if let grammers_client::Update::NewMessage(message) = update {
+                        // Process the message directly since it's already a Message type
+                        let msg = message;
+                        // Extract chat ID from peer
+                        let chat_id = msg.chat().id();
+                        
+                        // Only process messages from monitored chats
+                        if monitored_chat_ids.contains(&chat_id) {
+                            // Extract user ID from sender
+                            let user_id = msg.sender().map(|sender| sender.id());
+                            
+                            // Fetch user info if we have a user_id
+                            let (username, first_name, last_name, is_bot) = if let Some(uid) = user_id {
+                                match fetch_user_info_from_telegram(&state, uid).await {
+                                    Ok(user_info) => (
+                                        user_info.username,
+                                        user_info.first_name,
+                                        user_info.last_name,
+                                        user_info.is_bot,
+                                    ),
+                                    Err(e) => {
+                                        println!("⚠️  Failed to fetch user info for {}: {}", uid, e);
+                                        (None, None, None, false)
+                                    }
+                                }
+                            } else {
+                                (None, None, None, false)
+                            };
+
+                            // Extract message text
+                            let message_text = Some(msg.text().to_string());
+
+                            // Create message data
+                            let msg_data = TelegramMessageData {
+                                id: msg.id() as i64,
+                                chat_id,
+                                user_id,
+                                username,
+                                first_name,
+                                last_name,
+                                text: message_text,
+                                date: msg.date(),
+                                is_bot,
+                            };
+
+                            // Save message to database
+                            if let Err(e) = save_telegram_message_to_db(&state, &msg_data).await {
+                                println!("❌ Failed to save message: {}", e);
+                            } else {
+                                println!("✅ Processed message from chat {}: \"{}\"", 
+                                    chat_id, 
+                                    msg_data.text.as_deref().unwrap_or("")
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                println!("❌ Telegram update error: {}", e);
+                
+                if e.to_string().contains("connection") || e.to_string().contains("timeout") {
+                    println!("🔄 Connection error detected, attempting to reconnect...");
+                    
+                    if let Err(reconnect_err) = initialize_telegram_client(&state).await {
+                        println!("❌ Failed to reconnect: {}", reconnect_err);
+                    } else {
+                        println!("✅ Successfully reconnected to Telegram");
+                    }
+                }
+                
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+        
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     }
 }
 
-async fn root() -> Json<ApiResponse> {
-    Json(ApiResponse {
-        message: "AUTONOMOUS AI Intelligence System with Ollama".to_string(),
-        data: Some(serde_json::json!({
-            "version": "3.0.0",
-            "mode": "autonomous_ollama",
-            "features": [
-                "Real Ollama AI Message Understanding",
-                "Context-aware Response Generation", 
-                "Human-like Conversational Responses",
-                "Person Intelligence Extraction",
-                "Personal Info & Social Connections Analysis",
-                "Vulnerability Detection",
-                "Real Database Message Reading",
-                "Real Telegram MTProto Integration",
-                "Auto-save Messages from Monitored Chats",
-                "Real-time AI Processing"
-            ],
-            "status": "running_with_ollama"
-        })),
-    })
+async fn root() -> Html<String> {
+    Html(std::fs::read_to_string("intelligence-api/public/index.html").unwrap_or_else(|_| {
+        "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=/panel'></head><body>Redirecting...</body></html>".to_string()
+    }))
+}
+
+async fn web_panel() -> Html<String> {
+    Html(std::fs::read_to_string("intelligence-api/public/index.html").unwrap_or_else(|_| {
+        "<h1>Error loading panel</h1>".to_string()
+    }))
 }
 
 async fn health() -> Json<HealthResponse> {
@@ -1620,8 +1970,7 @@ async fn api_status() -> Json<ApiResponse> {
             "autonomous_features": [
                 "ollama_message_analysis",
                 "ai_style_learning",
-                "ollama_response_generation",
-                "sample_message_testing"
+                "ollama_response_generation"
             ],
             "status": "fully_autonomous_with_ollama"
         })),
@@ -1647,161 +1996,88 @@ async fn get_stats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
     })
 }
 
-async fn get_chats(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let messages = create_sample_messages();
-    
-    let chat_summary = serde_json::json!({
-        "chat_id": -1001234567890i64,
-        "chat_title": "AI Development Group",
-        "total_messages": messages.len(),
-        "last_analyzed": chrono::Utc::now().to_rfc3339(),
-        "status": "active"
-    });
-    
-    Json(ApiResponse {
-        message: "Active chats with analysis".to_string(),
-        data: Some(serde_json::json!(vec![chat_summary])),
-    })
-}
-
-async fn get_recent_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let messages = create_sample_messages();
-    
-    let message_data: Vec<serde_json::Value> = messages
-        .into_iter()
-        .map(|msg| {
-            serde_json::json!({
-                "id": msg.id,
-                "message_id": msg.message_id,
-                "chat_id": msg.chat_id,
-                "user_id": msg.user_id,
-                "username": msg.username,
-                "first_name": msg.first_name,
-                "message_text": msg.message_text,
-                "message_date": msg.message_date,
-                "message_type": msg.message_type,
-                "is_bot": msg.is_bot,
-            })
-        })
-        .collect();
-    
-    Json(ApiResponse {
-        message: "Recent messages".to_string(),
-        data: Some(serde_json::json!(message_data)),
-    })
-}
-
-async fn analyze_messages(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let messages = create_sample_messages();
-    
-    match analyze_messages_with_ollama(&state, &messages).await {
-        Ok(analysis) => {
-            Json(ApiResponse {
-                message: "Message analysis complete".to_string(),
-                data: Some(serde_json::json!({
-                    "chat_id": analysis.chat_id,
-                    "chat_title": analysis.chat_title,
-                    "total_messages": analysis.total_messages,
-                    "analyzed_messages": analysis.analyzed_messages,
-                    "style": {
-                        "common_words": analysis.style.common_words,
-                        "average_length": analysis.style.average_length,
-                        "emoji_usage": analysis.style.emoji_usage,
-                        "punctuation_patterns": analysis.style.punctuation_patterns,
-                        "common_phrases": analysis.style.common_phrases,
-                    },
-                    "last_analyzed": analysis.last_analyzed
-                })),
-            })
-        }
-        Err(e) => {
-            Json(ApiResponse {
-                message: format!("Analysis failed: {}", e),
-                data: None,
-            })
-        }
-    }
-}
-
-async fn generate_response(State(state): State<Arc<AppState>>) -> Json<ApiResponse> {
-    let messages = create_sample_messages();
-    
-    if let Some(message) = messages.first() {
-        if let Some(text) = &message.message_text {
-            match generate_response_with_ollama(&state, text).await {
-                Ok(response) => {
+async fn add_chat(State(state): State<Arc<AppState>>, Json(payload): Json<serde_json::Value>) -> Json<ApiResponse> {
+    match &state.db_pool {
+        Some(pool) => {
+            let chat_id: i64 = payload["chat_id"].as_i64().unwrap_or(0);
+            let chat_title: Option<String> = payload["chat_title"].as_str().map(|s| s.to_string());
+            let chat_type: Option<String> = payload["chat_type"].as_str().map(|s| s.to_string());
+            let is_active: bool = payload["is_active"].as_bool().unwrap_or(true);
+            let auto_analyze: bool = payload["auto_analyze"].as_bool().unwrap_or(true);
+            let auto_respond: bool = payload["auto_respond"].as_bool().unwrap_or(false);
+            let analysis_frequency: i32 = payload["analysis_frequency"].as_i64().unwrap_or(60) as i32;
+            
+            match sqlx::query(
+                "INSERT INTO monitored_chats (chat_id, chat_title, chat_type, is_active, auto_analyze, auto_respond, analysis_frequency)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                 ON CONFLICT (chat_id) DO UPDATE SET
+                   chat_title = EXCLUDED.chat_title,
+                   chat_type = EXCLUDED.chat_type,
+                   is_active = EXCLUDED.is_active,
+                   auto_analyze = EXCLUDED.auto_analyze,
+                   auto_respond = EXCLUDED.auto_respond,
+                   analysis_frequency = EXCLUDED.analysis_frequency,
+                   updated_at = NOW()"
+            )
+            .bind(chat_id)
+            .bind(&chat_title)
+            .bind(&chat_type)
+            .bind(is_active)
+            .bind(auto_analyze)
+            .bind(auto_respond)
+            .bind(analysis_frequency)
+            .execute(pool)
+            .await {
+                Ok(_) => {
                     Json(ApiResponse {
-                        message: "Response generated".to_string(),
-                        data: Some(serde_json::json!({
-                            "original_message": text,
-                            "generated_response": response,
-                            "model": "llama3.2",
-                            "timestamp": chrono::Utc::now().to_rfc3339()
-                        })),
+                        message: "Chat added successfully".to_string(),
+                        data: Some(serde_json::json!({"chat_id": chat_id})),
                     })
                 }
                 Err(e) => {
                     Json(ApiResponse {
-                        message: format!("Response generation failed: {}", e),
+                        message: format!("Error: {}", e),
                         data: None,
                     })
                 }
+            }
         }
-    } else {
+        None => {
             Json(ApiResponse {
-                message: "No message text available".to_string(),
+                message: "No database connection".to_string(),
                 data: None,
             })
         }
-    } else {
-        Json(ApiResponse {
-            message: "No messages available".to_string(),
-            data: None,
-        })
     }
 }
 
-async fn fetch_recent_chat_messages(
-    state: &AppState,
-    chat_id: i64,
-    limit: i64,
-) -> Result<Vec<TelegramMessage>, Box<dyn std::error::Error + Send + Sync>> {
+async fn remove_chat(State(state): State<Arc<AppState>>, Path(chat_id): Path<i64>) -> Json<ApiResponse> {
     match &state.db_pool {
         Some(pool) => {
-            let rows = sqlx::query(
-                "SELECT id, message_id, chat_id, user_id, username, first_name, last_name,
-                        message_text, message_date, message_type, is_bot
-                 FROM messages
-                 WHERE chat_id = $1 AND message_text IS NOT NULL
-                 ORDER BY message_date DESC
-                 LIMIT $2"
-            )
-            .bind(chat_id)
-            .bind(limit)
-            .fetch_all(pool)
-            .await?;
-
-            let mut messages = Vec::new();
-            for row in rows {
-                messages.push(TelegramMessage {
-                    id: row.get("id"),
-                    message_id: row.get("message_id"),
-                    chat_id: row.get("chat_id"),
-                    user_id: row.get("user_id"),
-                    username: row.get("username"),
-                    first_name: row.get("first_name"),
-                    last_name: row.get("last_name"),
-                    message_text: row.get("message_text"),
-                    message_date: row.get("message_date"),
-                    message_type: row.get("message_type"),
-                    is_bot: row.get("is_bot"),
-                });
-            }
-            // reverse to chronological
-            messages.reverse();
-            Ok(messages)
+            match sqlx::query("UPDATE monitored_chats SET is_active = false WHERE chat_id = $1")
+                .bind(chat_id)
+                .execute(pool)
+                .await {
+                    Ok(_) => {
+                        Json(ApiResponse {
+                            message: "Chat removed successfully".to_string(),
+                            data: Some(serde_json::json!({"chat_id": chat_id})),
+                        })
+                    }
+                    Err(e) => {
+                        Json(ApiResponse {
+                            message: format!("Error: {}", e),
+                            data: None,
+                        })
+                    }
+                }
         }
-        None => Ok(create_sample_messages()),
+        None => {
+            Json(ApiResponse {
+                message: "No database connection".to_string(),
+                data: None,
+            })
+        }
     }
 }
 
