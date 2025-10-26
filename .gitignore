@@ -69,3 +69,10 @@ node_modules/
 *.der
 *.priv
 *.pub
+
+# Rust
+target/
+**/target/
+rust-intelligence-system/target/
+*.pdb
+.Cargo

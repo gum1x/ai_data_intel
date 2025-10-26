@@ -1,2 +1,0 @@
-fn(Arc<AppState>) -> impl std::future::Future<Output = axum::Json<ApiResponse>> {get_recent_messages}
-fn(Arc<AppState>) -> impl std::future::Future<Output = axum::Json<ApiResponse>> {get_recent_messages}: Handler<_, _>
